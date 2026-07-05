@@ -12,8 +12,8 @@ const benchmarkResults = document.querySelector("#benchmarkResults");
 
 const MODEL_PRESETS = [
   { label: "Gemini 3.1 Flash-Lite", value: "gemini-3.1-flash-lite" },
-  { label: "Gemma 4 26B", value: "Gemma 4 26B" },
-  { label: "Gemma 4 31B", value: "Gemma 4 31B" },
+  { label: "Gemma 4 26B", value: "gemma-4-26b-a4b-it" },
+  { label: "Gemma 4 31B", value: "gemma-4-31b-it" },
   { label: "自定义", value: "" }
 ];
 
