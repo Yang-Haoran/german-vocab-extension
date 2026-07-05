@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的德语单词本</title>
+    <link rel="stylesheet" href="app.css">
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-header">
+        <div>
+          <h1>我的德语单词本</h1>
+          <p id="count">共 0 个词条</p>
+        </div>
+        <button id="openOptions" class="secondary">API 设置</button>
+      </header>
+
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="搜索德语、中文或上下文">
+      </div>
+      <section id="wordList" class="word-list"></section>
+    </main>
+    <script src="words.js"></script>
+  </body>
+</html>

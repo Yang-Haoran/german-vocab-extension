@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>插件设置</title>
+    <link rel="stylesheet" href="app.css">
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-header">
+        <div>
+          <h1>插件设置</h1>
+          <p>配置用于自动翻译的 Gemini API。</p>
+        </div>
+        <button id="openWords" class="secondary">打开单词本</button>
+      </header>
+
+      <section class="card">
+        <form id="settingsForm">
+          <div class="field">
+            <label for="apiKey">Gemini API Key</label>
+            <input id="apiKey" name="apiKey" type="password" autocomplete="off" required>
+            <span class="hint">
+              API Key 只保存在当前浏览器本地。你可以在 Google AI Studio 免费创建。
+            </span>
+          </div>
+
+          <div class="field">
+            <label for="model">Gemini 模型</label>
+            <input id="model" name="model" value="gemini-3.1-flash-lite" required>
+            <span class="hint">推荐使用速度快、每日免费额度较高的 gemini-3.1-flash-lite。</span>
+          </div>
+
+          <div class="field">
+            <label for="voice">德语朗读声音</label>
+            <div class="inline-field">
+              <select id="voice" name="voice"></select>
+              <button id="previewVoice" type="button" class="secondary">试听</button>
+            </div>
+            <span class="hint">声音来自你的操作系统。推荐选择语言标记为 de-DE 的声音。</span>
+          </div>
+
+          <button type="submit">保存设置</button>
+          <span id="status" class="status" aria-live="polite"></span>
+        </form>
+      </section>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>
