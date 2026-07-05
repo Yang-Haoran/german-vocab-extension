@@ -14,7 +14,6 @@ body {
 
 button,
 input,
-textarea,
 select {
   font: inherit;
 }
@@ -84,15 +83,6 @@ button.danger:hover {
   box-shadow: 0 8px 24px rgb(15 23 42 / 5%);
 }
 
-.section-card {
-  margin-top: 18px;
-}
-
-.section-card h2 {
-  margin: 0 0 8px;
-  font-size: 20px;
-}
-
 .field {
   display: grid;
   gap: 7px;
@@ -104,7 +94,6 @@ button.danger:hover {
 }
 
 .field input,
-.field textarea,
 .field select {
   width: 100%;
   border: 1px solid #cbd5e1;
@@ -115,15 +104,9 @@ button.danger:hover {
 }
 
 .field input:focus,
-.field textarea:focus,
 .field select:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px #dbeafe;
-}
-
-.field textarea {
-  min-height: 84px;
-  resize: vertical;
 }
 
 .inline-field {
@@ -133,10 +116,6 @@ button.danger:hover {
 
 .inline-field select {
   flex: 1;
-}
-
-.inline-field input {
-  flex: 1.2;
 }
 
 .inline-field button {
@@ -151,57 +130,6 @@ button.danger:hover {
 
 .status.success {
   color: #15803d;
-}
-
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.small-button {
-  padding: 6px 10px;
-  font-size: 12px;
-}
-
-.benchmark-results {
-  display: grid;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.benchmark-row {
-  padding: 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #f8fafc;
-}
-
-.benchmark-row header {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.benchmark-result {
-  display: grid;
-  gap: 5px;
-  color: #536178;
-  line-height: 1.5;
-}
-
-.benchmark-result.success strong {
-  color: #15803d;
-}
-
-.benchmark-result.error {
-  color: #be123c;
-}
-
-.empty.compact {
-  padding: 18px;
 }
 
 .toolbar {

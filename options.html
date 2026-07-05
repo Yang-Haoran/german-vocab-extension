@@ -28,11 +28,8 @@
 
           <div class="field">
             <label for="model">Gemini 模型</label>
-            <div class="inline-field">
-              <select id="modelPreset" name="modelPreset"></select>
-              <input id="model" name="model" value="gemini-3.1-flash-lite" required>
-            </div>
-            <span class="hint">可以选择常用模型，也可以手动填写 AI Studio 中的模型名称。</span>
+            <input id="model" name="model" value="gemini-3.1-flash-lite" required>
+            <span class="hint">推荐使用速度快、每日免费额度较高的 gemini-3.1-flash-lite。</span>
           </div>
 
           <div class="field">
@@ -47,41 +44,6 @@
           <button type="submit">保存设置</button>
           <span id="status" class="status" aria-live="polite"></span>
         </form>
-      </section>
-
-      <section class="card section-card">
-        <h2>模型测试器</h2>
-        <p class="hint">
-          使用已保存的 API Key 测试多个模型。结果用于比较总耗时、JSON 解析稳定性和翻译质量。
-        </p>
-
-        <div class="field">
-          <label for="testModels">测试模型列表</label>
-          <textarea id="testModels" rows="4"></textarea>
-          <span class="hint">每行一个模型名称。展示名是否可用取决于 Gemini API 实际接受的 model id。</span>
-        </div>
-
-        <div class="field">
-          <label for="testText">选中文本</label>
-          <input id="testText" value="treibt">
-        </div>
-
-        <div class="field">
-          <label for="testContext">上下文</label>
-          <textarea id="testContext" rows="4">Unter dem anhaltenden Druck der USA treibt die kubanische Regierung erneut die Liberalisierung der heimischen Wirtschaft voran.</textarea>
-        </div>
-
-        <div class="field">
-          <label for="testExample">保存到单词本的例句</label>
-          <textarea id="testExample" rows="3">Unter dem anhaltenden Druck der USA treibt die kubanische Regierung erneut die Liberalisierung der heimischen Wirtschaft voran.</textarea>
-        </div>
-
-        <div class="button-row">
-          <button id="runSelectedModelTest" type="button">测试当前模型</button>
-          <button id="runAllModelTests" type="button" class="secondary">测试全部模型</button>
-        </div>
-
-        <div id="benchmarkResults" class="benchmark-results" aria-live="polite"></div>
       </section>
     </main>
     <script src="options.js"></script>
