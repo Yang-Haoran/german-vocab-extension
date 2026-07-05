@@ -13,6 +13,7 @@
 - Saves source title, source URL, example sentence, and Chinese explanation.
 - Duplicate protection for already saved words from the same page.
 - Local caching to reduce repeated API calls.
+- Built-in model benchmark page for comparing configured Gemini/Gemma models.
 - Chinese user interface for the first version.
 
 ## Funktionen
@@ -24,6 +25,7 @@
 - Speicherung von Titel, URL, Beispielsatz und chinesischer Erklaerung.
 - Schutz vor doppelten Eintraegen auf derselben Webseite.
 - Lokaler Cache zur Reduzierung wiederholter API-Anfragen.
+- Integrierter Modell-Benchmark zum Vergleichen konfigurierter Gemini-/Gemma-Modelle.
 - Chinesische Benutzeroberflaeche in der ersten Version.
 
 ## Tech Stack

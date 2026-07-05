@@ -11,6 +11,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return false;
   }
 
+  if (message.type === "TEST_MODEL") {
+    testModel(message.payload)
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({ ok: false, error: error.message }));
+
+    return true;
+  }
+
   if (message.type !== "TRANSLATE_SELECTION") {
     return false;
   }
@@ -21,6 +29,42 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   return true;
 });
+
+async function testModel({ model, selectedText, context, exampleSentence }) {
+  const settings = await chrome.storage.local.get("geminiApiKey");
+  const apiKey = settings.geminiApiKey?.trim();
+  const testedModel = model?.trim();
+
+  if (!apiKey) {
+    throw new Error("请先填写并保存 Gemini API Key。");
+  }
+
+  if (!testedModel) {
+    throw new Error("请填写要测试的模型名称。");
+  }
+
+  const normalizedSelectedText = selectedText?.trim() || "treibt";
+  const normalizedContext = context?.trim() || normalizedSelectedText;
+  const normalizedExampleSentence =
+    exampleSentence?.trim() || normalizedContext || normalizedSelectedText;
+  const startedAt = Date.now();
+  const translation = await requestTranslation({
+    apiKey,
+    model: testedModel,
+    selectedText: normalizedSelectedText,
+    context: normalizedContext,
+    exampleSentence: normalizedExampleSentence,
+    cacheKey: "",
+    cache: {},
+    skipCache: true
+  });
+
+  return {
+    model: testedModel,
+    durationMs: Date.now() - startedAt,
+    translation
+  };
+}
 
 async function translateSelection({ selectedText, context, exampleSentence }) {
   const settings = await chrome.storage.local.get([
@@ -80,7 +124,8 @@ async function requestTranslation({
   context,
   exampleSentence,
   cacheKey,
-  cache
+  cache,
+  skipCache = false
 }) {
   const prompt = buildPrompt(selectedText, context, exampleSentence);
   const endpoint =
@@ -122,8 +167,12 @@ async function requestTranslation({
   try {
     const parsed = JSON.parse(rawText);
     const translation = normalizeTranslation(parsed, selectedText, exampleSentence);
-    memoryCache.set(cacheKey, translation);
-    saveToCache(cache, cacheKey, translation);
+
+    if (!skipCache) {
+      memoryCache.set(cacheKey, translation);
+      saveToCache(cache, cacheKey, translation);
+    }
+
     return translation;
   } catch {
     throw new Error("无法解析 Gemini 返回的结果，请重试。");
