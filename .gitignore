@@ -8,3 +8,16 @@ coverage/
 *.log
 work/
 outputs/
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+server/.env
+
+# Local data
+*.db
+server/data/
+
+# System files
+.DS_Store

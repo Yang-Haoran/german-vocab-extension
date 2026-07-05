@@ -13,6 +13,16 @@ Web page selection
 -> local vocabulary notebook
 ```
 
+Planned cloud sync path:
+
+```text
+local vocabulary notebook
+-> server API
+-> PostgreSQL
+-> daily review scheduler
+-> Telegram Bot API
+```
+
 ### Main components
 
 - `manifest.json`: extension metadata, permissions, content script registration.
@@ -20,10 +30,11 @@ Web page selection
 - `background.js`: calls the Gemini API, normalizes structured translation results, and caches repeated requests.
 - `options.html` / `options.js`: stores API key, model name, and German voice preference in `chrome.storage.local`.
 - `words.html` / `words.js`: displays the local vocabulary notebook with search, delete, and pronunciation.
+- `server/`: Node.js backend for the future cloud vocabulary notebook, PostgreSQL storage, and Telegram review messages.
 
 ### Data storage
 
-The first version stores all vocabulary locally through `chrome.storage.local`. No user account or backend server is required.
+The first version stores all vocabulary locally through `chrome.storage.local`. The new backend in `server/` is additive: it prepares cloud sync without breaking the offline local notebook.
 
 ## Deutsch
 

@@ -35,6 +35,23 @@
 - Gemini API
 - `chrome.storage.local`
 - Web Speech API
+- Node.js / Express backend (planned cloud sync)
+- PostgreSQL
+- Telegram Bot API
+
+## Project Structure
+
+```text
+german-vocab-extension/
+  manifest.json          # Chrome extension entry
+  background.js          # Gemini API calls and caching
+  content.js             # Text selection popup
+  words.html / words.js  # Local vocabulary notebook
+  server/                # Cloud API, PostgreSQL, Telegram review bot
+  docs/                  # Architecture, privacy, roadmap, cloud sync notes
+```
+
+The extension still runs from the repository root. The `server/` folder is the first step toward cloud sync and daily Telegram review.
 
 ## Installation
 
@@ -51,6 +68,12 @@
 The extension stores vocabulary and settings locally in the browser. The Gemini API key is not stored in the repository. Selected text and context are sent to the configured Gemini model for translation.
 
 More details: [docs/privacy.md](docs/privacy.md)
+
+## Cloud Sync
+
+The first backend version lives in [server](server/README.md). It provides a private API for storing vocabulary in PostgreSQL and a Telegram Bot API integration for daily review messages.
+
+Design notes: [docs/cloud-sync.md](docs/cloud-sync.md)
 
 ## Architecture
 
