@@ -13,12 +13,16 @@
           <h1>我的德语单词本</h1>
           <p id="count">共 0 个词条</p>
         </div>
-        <button id="openOptions" class="secondary">API 设置</button>
+        <div class="header-actions">
+          <button id="syncCloud" class="secondary">同步到云端</button>
+          <button id="openOptions" class="secondary">API 设置</button>
+        </div>
       </header>
 
       <div class="toolbar">
         <input id="search" type="search" placeholder="搜索德语、中文或上下文">
       </div>
+      <div id="syncStatus" class="sync-status" aria-live="polite"></div>
       <section id="wordList" class="word-list"></section>
     </main>
     <script src="words.js"></script>

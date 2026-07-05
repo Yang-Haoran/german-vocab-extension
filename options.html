@@ -41,6 +41,28 @@
             <span class="hint">声音来自你的操作系统。推荐选择语言标记为 de-DE 的声音。</span>
           </div>
 
+          <hr class="section-divider">
+
+          <div class="field checkbox-field">
+            <label>
+              <input id="cloudSyncEnabled" name="cloudSyncEnabled" type="checkbox">
+              启用云端同步
+            </label>
+            <span class="hint">开启后，可以在单词本页面手动把本地词条同步到 VPS 后端。</span>
+          </div>
+
+          <div class="field">
+            <label for="cloudApiBaseUrl">云端 API 地址</label>
+            <input id="cloudApiBaseUrl" name="cloudApiBaseUrl" type="url" placeholder="https://sea1.ktno.cc/vocab">
+            <span class="hint">当前 VPS 地址建议填写：https://sea1.ktno.cc/vocab</span>
+          </div>
+
+          <div class="field">
+            <label for="cloudApiSecret">云端 API Secret</label>
+            <input id="cloudApiSecret" name="cloudApiSecret" type="password" autocomplete="off" placeholder="填写 VPS server/.env 里的 API_SECRET">
+            <span class="hint">API Secret 只保存在当前浏览器本地，用来证明这个请求来自你。</span>
+          </div>
+
           <button type="submit">保存设置</button>
           <span id="status" class="status" aria-live="polite"></span>
         </form>

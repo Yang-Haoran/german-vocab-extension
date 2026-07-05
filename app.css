@@ -65,6 +65,12 @@ button.danger:hover {
   margin-bottom: 24px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .page-header h1 {
   margin: 0;
   font-size: 28px;
@@ -120,6 +126,22 @@ button.danger:hover {
 
 .inline-field button {
   flex: 0 0 auto;
+}
+
+.checkbox-field label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.checkbox-field input {
+  width: auto;
+}
+
+.section-divider {
+  margin: 22px 0;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
 }
 
 .hint,
@@ -212,6 +234,34 @@ button.danger:hover {
 .word-card .meta {
   color: #2563eb;
   font-size: 13px;
+}
+
+.sync-status {
+  min-height: 20px;
+  margin: -8px 0 16px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.sync-status.success {
+  color: #15803d;
+}
+
+.sync-status.error {
+  color: #be123c;
+}
+
+.sync-badge {
+  margin-top: 9px;
+  font-size: 12px;
+}
+
+.sync-badge.synced {
+  color: #15803d;
+}
+
+.sync-badge.pending {
+  color: #b45309;
 }
 
 .word-card a {

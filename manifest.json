@@ -7,7 +7,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "https://sea1.ktno.cc/*"
   ],
   "background": {
     "service_worker": "background.js"

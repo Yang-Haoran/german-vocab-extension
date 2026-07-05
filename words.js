@@ -1,11 +1,14 @@
 const wordList = document.querySelector("#wordList");
 const count = document.querySelector("#count");
 const search = document.querySelector("#search");
+const syncCloudButton = document.querySelector("#syncCloud");
+const syncStatus = document.querySelector("#syncStatus");
 let words = [];
 
 loadWords();
 
 search.addEventListener("input", renderWords);
+syncCloudButton.addEventListener("click", syncWordsToCloud);
 document.querySelector("#openOptions").addEventListener("click", () => {
   chrome.runtime.openOptionsPage();
 });
@@ -78,6 +81,9 @@ function createWordCard(word) {
     ${word.explanation ? `<div class="explanation">${escapeHtml(word.explanation)}</div>` : ""}
     ${word.context ? `<div class="context"><strong>例句：</strong>${escapeHtml(word.context)}</div>` : ""}
     ${word.contextTranslation ? `<div class="context">${escapeHtml(word.contextTranslation)}</div>` : ""}
+    <div class="sync-badge ${word.cloudSyncedAt ? "synced" : "pending"}">
+      ${word.cloudSyncedAt ? `已同步：${escapeHtml(formatDateTime(word.cloudSyncedAt))}` : "未同步到云端"}
+    </div>
     ${word.sourceUrl ? `<a href="${escapeHtml(word.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(word.sourceTitle || "查看来源")}</a>` : ""}
   `;
 
@@ -131,6 +137,115 @@ function loadVoices() {
       resolve(speechSynthesis.getVoices());
     }, { once: true });
   });
+}
+
+
+
+async function syncWordsToCloud() {
+  if (words.length === 0) {
+    setSyncStatus("本地单词本还是空的，暂时没有可同步的词。", "");
+    return;
+  }
+
+  const settings = await chrome.storage.local.get([
+    "cloudSyncEnabled",
+    "cloudApiBaseUrl",
+    "cloudApiSecret"
+  ]);
+
+  if (!settings.cloudSyncEnabled || !settings.cloudApiBaseUrl || !settings.cloudApiSecret) {
+    setSyncStatus("请先到 API 设置里启用云端同步，并填写云端 API 地址和 API Secret。", "error");
+    return;
+  }
+
+  const unsyncedWords = words.filter((word) => !word.cloudSyncedAt);
+  if (unsyncedWords.length === 0) {
+    setSyncStatus("所有本地词条都已经同步到云端。", "success");
+    return;
+  }
+
+  syncCloudButton.disabled = true;
+  setSyncStatus(`正在同步 ${unsyncedWords.length} 个词条...`, "");
+
+  let successCount = 0;
+  let failedCount = 0;
+  const syncedAt = new Date().toISOString();
+
+  for (const word of unsyncedWords) {
+    try {
+      await uploadWordToCloud(word, settings);
+      word.cloudSyncedAt = syncedAt;
+      successCount += 1;
+    } catch (error) {
+      failedCount += 1;
+      console.error("Cloud sync failed", word.original, error);
+    }
+  }
+
+  await chrome.storage.local.set({ words });
+  renderWords();
+  syncCloudButton.disabled = false;
+
+  if (failedCount === 0) {
+    setSyncStatus(`同步完成：${successCount} 个词条已上传到云端。`, "success");
+  } else {
+    setSyncStatus(`部分同步失败：成功 ${successCount} 个，失败 ${failedCount} 个。稍后可以再点一次同步。`, "error");
+  }
+}
+
+async function uploadWordToCloud(word, settings) {
+  const baseUrl = String(settings.cloudApiBaseUrl || "").replace(/\/+$/, "");
+  const response = await fetch(`${baseUrl}/api/words`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-secret": settings.cloudApiSecret
+    },
+    body: JSON.stringify(toCloudPayload(word))
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Cloud API ${response.status}: ${detail}`);
+  }
+}
+
+function toCloudPayload(word) {
+  return {
+    original: word.original,
+    translation: word.translation,
+    baseForm: word.baseForm,
+    partOfSpeech: word.partOfSpeech,
+    article: word.article,
+    plural: word.plural,
+    explanation: word.explanation,
+    contextText: word.context,
+    contextTranslation: word.contextTranslation,
+    sourceTitle: word.sourceTitle,
+    sourceUrl: word.sourceUrl
+  };
+}
+
+function setSyncStatus(message, type) {
+  syncStatus.textContent = message;
+  syncStatus.className = `sync-status ${type || ""}`.trim();
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    return new Intl.DateTimeFormat("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
 }
 
 function escapeHtml(value) {

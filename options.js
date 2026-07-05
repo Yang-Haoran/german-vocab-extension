@@ -2,11 +2,24 @@ const form = document.querySelector("#settingsForm");
 const apiKeyInput = document.querySelector("#apiKey");
 const modelInput = document.querySelector("#model");
 const voiceSelect = document.querySelector("#voice");
+const cloudSyncEnabledInput = document.querySelector("#cloudSyncEnabled");
+const cloudApiBaseUrlInput = document.querySelector("#cloudApiBaseUrl");
+const cloudApiSecretInput = document.querySelector("#cloudApiSecret");
 const status = document.querySelector("#status");
 
-chrome.storage.local.get(["geminiApiKey", "geminiModel", "germanVoiceURI"]).then(async (settings) => {
+chrome.storage.local.get([
+  "geminiApiKey",
+  "geminiModel",
+  "germanVoiceURI",
+  "cloudSyncEnabled",
+  "cloudApiBaseUrl",
+  "cloudApiSecret"
+]).then(async (settings) => {
   apiKeyInput.value = settings.geminiApiKey || "";
   modelInput.value = settings.geminiModel || "gemini-3.1-flash-lite";
+  cloudSyncEnabledInput.checked = Boolean(settings.cloudSyncEnabled);
+  cloudApiBaseUrlInput.value = settings.cloudApiBaseUrl || "https://sea1.ktno.cc/vocab";
+  cloudApiSecretInput.value = settings.cloudApiSecret || "";
   await populateGermanVoices(settings.germanVoiceURI);
 });
 
@@ -15,7 +28,10 @@ form.addEventListener("submit", async (event) => {
   await chrome.storage.local.set({
     geminiApiKey: apiKeyInput.value.trim(),
     geminiModel: modelInput.value.trim(),
-    germanVoiceURI: voiceSelect.value
+    germanVoiceURI: voiceSelect.value,
+    cloudSyncEnabled: cloudSyncEnabledInput.checked,
+    cloudApiBaseUrl: normalizeBaseUrl(cloudApiBaseUrlInput.value),
+    cloudApiSecret: cloudApiSecretInput.value.trim()
   });
   status.textContent = "设置已保存。现在可以到网页中选词测试。";
   status.className = "status success";
@@ -79,4 +95,9 @@ function loadVoices() {
       resolve(speechSynthesis.getVoices());
     }, { once: true });
   });
+}
+
+
+function normalizeBaseUrl(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
 }
