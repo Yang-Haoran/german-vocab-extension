@@ -170,7 +170,7 @@ async function sendAiExplanation(chatId, word) {
 
   try {
     const explanation = await generateAiExplanation(word);
-    await sendReviewMessage(chatId, formatAiExplanation(word, explanation));
+    await sendReviewMessage(chatId, formatAiExplanation(word, explanation), reviewResultKeyboard(word.id));
   } catch (error) {
     console.error("AI explanation failed", error);
     await sendReviewMessage(chatId, "AI 讲解暂时失败了。主复习流程不受影响，你可以先继续点“认识 / 模糊 / 忘了”。");
@@ -301,8 +301,45 @@ function formatAiExplanation(word, explanation) {
   return [
     `<b>AI 讲讲：${escapeHtml(word.original)}</b>`,
     "",
-    escapeHtml(shorten(explanation, 2600))
-  ].join("\n");
+    formatStructuredExplanation(explanation),
+    "",
+    "<i>现在给这个词打个复习结果：</i>"
+  ].filter(Boolean).join("\n");
+}
+
+function formatStructuredExplanation(explanation) {
+  const sections = parseExplanationSections(explanation);
+
+  if (sections.length === 0) {
+    return escapeHtml(shorten(explanation, 1800));
+  }
+
+  return sections
+    .map(({ label, value }) => `<b>${escapeHtml(label)}：</b>${escapeHtml(value)}`)
+    .join("\n\n");
+}
+
+function parseExplanationSections(explanation) {
+  const labels = ["等级", "核心意思", "用法", "近义/搭配", "例句", "记忆提示"];
+  const labelPattern = labels.join("|");
+  const normalized = String(explanation || "")
+    .replace(/\r/g, "")
+    .replace(new RegExp(`\\s*(${labelPattern})[:：]`, "g"), "\n$1：")
+    .trim();
+
+  const sections = [];
+  const pattern = new RegExp(`(${labelPattern})[:：]([\\s\\S]*?)(?=\\n(?:${labelPattern})[:：]|$)`, "g");
+  let match;
+
+  while ((match = pattern.exec(normalized)) !== null) {
+    const label = match[1];
+    const value = match[2].replace(/\s+/g, " ").trim();
+    if (value) {
+      sections.push({ label, value: shorten(value, 420) });
+    }
+  }
+
+  return sections;
 }
 
 function formatRecorded(word, action, updated) {
@@ -324,12 +361,16 @@ function promptKeyboard(wordId) {
 function resultKeyboard(wordId) {
   return [
     [{ text: "AI 讲讲", callback_data: `rv:explain:${wordId}` }],
-    [
-      { text: "认识", callback_data: `rv:know:${wordId}` },
-      { text: "模糊", callback_data: `rv:unsure:${wordId}` },
-      { text: "忘了", callback_data: `rv:forgot:${wordId}` }
-    ]
+    ...reviewResultKeyboard(wordId)
   ];
+}
+
+function reviewResultKeyboard(wordId) {
+  return [[
+    { text: "认识", callback_data: `rv:know:${wordId}` },
+    { text: "模糊", callback_data: `rv:unsure:${wordId}` },
+    { text: "忘了", callback_data: `rv:forgot:${wordId}` }
+  ]];
 }
 
 function resultLabel(action) {
