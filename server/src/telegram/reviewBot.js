@@ -155,7 +155,7 @@ async function handleCallback(callback) {
 
   if (action === "explain") {
     await answerCallback(callbackId, "AI 正在讲解...");
-    await sendAiExplanation(chatId, word);
+    await editAiExplanation(chatId, messageId, word);
     return;
   }
 
@@ -165,15 +165,20 @@ async function handleCallback(callback) {
   await sendNextDueWord(chatId, wordId);
 }
 
-async function sendAiExplanation(chatId, word) {
+async function editAiExplanation(chatId, messageId, word) {
   await sendChatAction(chatId, "typing");
 
   try {
     const explanation = await generateAiExplanation(word);
-    await sendReviewMessage(chatId, formatAiExplanation(word, explanation), reviewResultKeyboard(word.id));
+    await editReviewMessage(chatId, messageId, formatAiExplanation(word, explanation), reviewResultKeyboard(word.id));
   } catch (error) {
     console.error("AI explanation failed", error);
-    await sendReviewMessage(chatId, "AI 讲解暂时失败了。主复习流程不受影响，你可以先继续点“认识 / 模糊 / 忘了”。");
+    await editReviewMessage(
+      chatId,
+      messageId,
+      formatAiExplanationError(word),
+      reviewResultKeyboard(word.id)
+    );
   }
 }
 
@@ -340,6 +345,16 @@ function parseExplanationSections(explanation) {
   }
 
   return sections;
+}
+
+function formatAiExplanationError(word) {
+  return [
+    `<b>${escapeHtml(word.original)}</b>`,
+    "",
+    "AI 讲解暂时失败了。你可以先按当前感觉打分，主复习流程不受影响。",
+    "",
+    "<i>现在给这个词打个复习结果：</i>"
+  ].join("\n");
 }
 
 function formatRecorded(word, action, updated) {
