@@ -1,5 +1,6 @@
 import { applyReviewResult, findWord } from "../routes/reviews.js";
 import { query } from "../db.js";
+import { generateAiExplanation } from "../ai/explain.js";
 
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 const REVIEW_LIMIT = 5;
@@ -130,7 +131,7 @@ async function handleCallback(callback) {
   const chatId = callback.message?.chat?.id;
   const messageId = callback.message?.message_id;
   const callbackId = callback.id;
-  const match = data.match(/^rv:(show|know|unsure|forgot):(\d+)$/);
+  const match = data.match(/^rv:(show|explain|know|unsure|forgot):(\d+)$/);
 
   if (!match || !chatId || !messageId) {
     await answerCallback(callbackId, "这个按钮已经失效了。", true);
@@ -152,10 +153,28 @@ async function handleCallback(callback) {
     return;
   }
 
+  if (action === "explain") {
+    await answerCallback(callbackId, "AI 正在讲解...");
+    await sendAiExplanation(chatId, word);
+    return;
+  }
+
   const updated = await applyReviewResult(wordId, action);
   await answerCallback(callbackId, `已记录：${resultLabel(action)}`);
   await editReviewMessage(chatId, messageId, formatRecorded(word, action, updated), []);
   await sendNextDueWord(chatId, wordId);
+}
+
+async function sendAiExplanation(chatId, word) {
+  await sendChatAction(chatId, "typing");
+
+  try {
+    const explanation = await generateAiExplanation(word);
+    await sendReviewMessage(chatId, formatAiExplanation(word, explanation));
+  } catch (error) {
+    console.error("AI explanation failed", error);
+    await sendReviewMessage(chatId, "AI 讲解暂时失败了。主复习流程不受影响，你可以先继续点“认识 / 模糊 / 忘了”。");
+  }
 }
 
 async function startManualReview(chatId) {
@@ -278,6 +297,14 @@ function formatAnswer(word) {
   return lines.join("\n");
 }
 
+function formatAiExplanation(word, explanation) {
+  return [
+    `<b>AI 讲讲：${escapeHtml(word.original)}</b>`,
+    "",
+    escapeHtml(shorten(explanation, 2600))
+  ].join("\n");
+}
+
 function formatRecorded(word, action, updated) {
   const nextReview = formatDate(updated.next_review_at);
   return [
@@ -295,11 +322,14 @@ function promptKeyboard(wordId) {
 }
 
 function resultKeyboard(wordId) {
-  return [[
-    { text: "认识", callback_data: `rv:know:${wordId}` },
-    { text: "模糊", callback_data: `rv:unsure:${wordId}` },
-    { text: "忘了", callback_data: `rv:forgot:${wordId}` }
-  ]];
+  return [
+    [{ text: "AI 讲讲", callback_data: `rv:explain:${wordId}` }],
+    [
+      { text: "认识", callback_data: `rv:know:${wordId}` },
+      { text: "模糊", callback_data: `rv:unsure:${wordId}` },
+      { text: "忘了", callback_data: `rv:forgot:${wordId}` }
+    ]
+  ];
 }
 
 function resultLabel(action) {
@@ -328,6 +358,13 @@ async function editReviewMessage(chatId, messageId, text, keyboard = null) {
     parse_mode: "HTML",
     disable_web_page_preview: true,
     reply_markup: { inline_keyboard: keyboard || [] }
+  });
+}
+
+async function sendChatAction(chatId, action) {
+  return telegramApi("sendChatAction", {
+    chat_id: chatId,
+    action
   });
 }
 

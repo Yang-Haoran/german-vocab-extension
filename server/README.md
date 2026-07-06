@@ -76,3 +76,17 @@ For a smoother review flow, the server can use a dedicated Telegram bot via `REV
 - `认识 / 模糊 / 忘了`: save the review result and send the next due word.
 
 Daily reviews still run with `DAILY_REVIEW_CRON` and `DAILY_REVIEW_TIMEZONE`; the default is 09:00 Europe/Berlin.
+
+## AI Word Explanation
+
+The dedicated review bot can add an `AI 讲讲` button after the answer is shown. It reads the saved word, context sentence, and translation from PostgreSQL, then calls the Google Generative Language API.
+
+Recommended environment variables:
+
+```env
+GEMINI_API_KEY=replace-with-your-google-ai-api-key
+AI_EXPLAIN_MODEL=gemma-4-26b-a4b-it
+AI_EXPLAIN_FALLBACK_MODEL=gemini-3.1-flash-lite
+```
+
+The AI explanation is optional. If the API key is missing or the model fails, the normal review buttons still work.
