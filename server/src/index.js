@@ -1,6 +1,7 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import { reviewsRouter } from "./routes/reviews.js";
 import { wordsRouter } from "./routes/words.js";
 import { startDailyReviewJob } from "./scheduler/dailyReview.js";
 
@@ -15,6 +16,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/words", wordsRouter);
+app.use("/api/reviews", reviewsRouter);
 
 startDailyReviewJob();
 

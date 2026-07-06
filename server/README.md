@@ -53,3 +53,14 @@ curl -H "x-api-secret: your-api-secret" http://localhost:3000/api/words
 See `.env.example`.
 
 Never commit `.env`, Telegram tokens, database passwords, or Gemini API keys.
+
+## Telegram Review Buttons
+
+Daily review messages use Telegram URL buttons instead of bot polling. This avoids conflicts when the same Telegram bot is already used by another service. Button links are signed with `REVIEW_ACTION_SECRET` or `API_SECRET` and call `/api/reviews/:wordId/:result`.
+
+Supported results:
+
+- `show`: show the answer page.
+- `know`: mark as known and schedule later review.
+- `unsure`: mark as unclear and review soon.
+- `forgot`: mark as forgotten and review tomorrow.
