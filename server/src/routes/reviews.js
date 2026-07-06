@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { Router } from "express";
 import { query } from "../db.js";
 
-const RESULT_CONFIG = {
+export const RESULT_CONFIG = {
   show: {
     label: "显示答案",
     intervalDays: 0,
@@ -115,7 +115,7 @@ function safeEqual(left, right) {
   return crypto.timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-async function findWord(wordId) {
+export async function findWord(wordId) {
   const result = await query(
     `select *
      from words
@@ -125,7 +125,7 @@ async function findWord(wordId) {
   return result.rows[0];
 }
 
-async function applyReviewResult(wordId, result) {
+export async function applyReviewResult(wordId, result) {
   const config = RESULT_CONFIG[result];
   const updateResult = await query(
     `update words

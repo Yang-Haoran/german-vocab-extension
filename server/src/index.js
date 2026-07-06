@@ -4,6 +4,7 @@ import express from "express";
 import { reviewsRouter } from "./routes/reviews.js";
 import { wordsRouter } from "./routes/words.js";
 import { startDailyReviewJob } from "./scheduler/dailyReview.js";
+import { startReviewBotPolling } from "./telegram/reviewBot.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -19,6 +20,7 @@ app.use("/api/words", wordsRouter);
 app.use("/api/reviews", reviewsRouter);
 
 startDailyReviewJob();
+startReviewBotPolling();
 
 app.listen(port, () => {
   console.log(`German vocab server listening on port ${port}`);

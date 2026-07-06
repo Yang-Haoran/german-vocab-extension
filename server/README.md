@@ -64,3 +64,15 @@ Supported results:
 - `know`: mark as known and schedule later review.
 - `unsure`: mark as unclear and review soon.
 - `forgot`: mark as forgotten and review tomorrow.
+
+## Dedicated Telegram Review Bot
+
+For a smoother review flow, the server can use a dedicated Telegram bot via `REVIEW_TELEGRAM_BOT_TOKEN` and `REVIEW_TELEGRAM_CHAT_ID`. This bot supports native Telegram interactions:
+
+- `/start`: show the welcome message.
+- `/review`: start an immediate review session.
+- `/stats`: show vocabulary and review stats.
+- `显示答案`: reveal the answer by editing the Telegram message.
+- `认识 / 模糊 / 忘了`: save the review result and send the next due word.
+
+Daily reviews still run with `DAILY_REVIEW_CRON` and `DAILY_REVIEW_TIMEZONE`; the default is 09:00 Europe/Berlin.
