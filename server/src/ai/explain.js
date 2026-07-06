@@ -63,38 +63,62 @@ async function callGemini(model, apiKey, prompt) {
     throw new Error("Gemini returned an empty explanation.");
   }
 
-  return text;
+  return cleanExplanation(text);
 }
 
 function buildPrompt(word) {
-  return `你是一位面向中文母语者的德语老师。请讲解这个德语生词，语气简洁、实用，适合 Telegram 阅读。
+  return `请直接生成一段中文德语生词讲解。
 
-要求：
-- 用中文解释。
-- 不要输出 Markdown 表格。
-- 不要写太长，总长度控制在 900 个中文字符以内。
-- 如果能判断 telc/CEFR 难度，请给出 A1/A2/B1/B2/C1。
-- 给出 2-4 个德语同义词或近义表达；如果没有合适同义词，就给常见搭配。
-- 给 1 个简单例句，配中文翻译。
-- 最后给一个记忆提示。
+绝对规则：
+1. 只输出最终讲解，不要复述任务、角色、要求或输入字段。
+2. 不要输出英文说明，不要写 Role、Tone、Target Word、Constraints、Self-Correction、Valid、Concise 等自检内容。
+3. 不要使用 Markdown 星号、表格、代码块、项目符号。
+4. 总长度控制在 450 个中文字符以内。
+5. 必须严格使用下面 6 行格式，每个标题只出现一次：
+等级：
+核心意思：
+用法：
+近义/搭配：
+例句：
+记忆提示：
 
+可用信息：
 生词：${word.original || ""}
 中文释义：${word.translation || ""}
 词性：${word.part_of_speech || ""}
 原形：${word.base_form || ""}
 冠词：${word.article || ""}
 复数：${word.plural || ""}
-原解释：${word.explanation || ""}
+已有解释：${word.explanation || ""}
 原句：${word.context_text || ""}
 原句中文：${word.context_translation || ""}
 
-请按这个结构输出：
-等级：...
-核心意思：...
-用法：...
-近义/搭配：...
-例句：...
-记忆提示：...`;
+现在直接输出 6 行中文讲解。`;
+}
+
+function cleanExplanation(value) {
+  let text = String(value || "").trim();
+
+  const firstHeadingIndex = text.search(/等级[:：]/);
+  if (firstHeadingIndex > 0) {
+    text = text.slice(firstHeadingIndex);
+  }
+
+  text = text
+    .replace(/\*+/g, "")
+    .replace(/`+/g, "")
+    .replace(/\$?\\rightarrow\$?/g, "→")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !isMetaLine(line))
+    .join("\n")
+    .trim();
+
+  return text;
+}
+
+function isMetaLine(line) {
+  return /^(Role|Tone|Target Word|Meaning|Constraints|Word|Type|Level|Synonyms|Collocations|Example|Memory Tip|Concise|Valid|Difficulty included|Self-Correction)/i.test(line);
 }
 
 function getApiKey() {
