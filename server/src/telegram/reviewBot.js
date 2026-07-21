@@ -196,10 +196,19 @@ async function startManualReview(chatId) {
 }
 
 async function sendNextDueWord(chatId, previousWordId, nextIndex, total) {
+  if (nextIndex > total) {
+    await sendReviewMessage(chatId, `这一轮复习完成了。今天先这样。
+
+想继续可以发送 /review。`);
+    return;
+  }
+
   const words = await pickDueWords(1, previousWordId);
 
   if (words.length === 0) {
-    await sendReviewMessage(chatId, "这一轮复习完成了。今天先这样，别把脑子烧焦。\n\n想继续可以发送 /review。");
+    await sendReviewMessage(chatId, `这一轮复习完成了。今天先这样。
+
+想继续可以发送 /review。`);
     return;
   }
 
@@ -256,8 +265,10 @@ async function sendStats(chatId) {
 }
 
 function formatPrompt(word, index, total) {
+  const safeTotal = Math.max(1, Number(total) || REVIEW_LIMIT);
+  const safeIndex = Math.min(Math.max(1, Number(index) || 1), safeTotal);
   const lines = [
-    `<b>复习 ${index}/${total}</b>`,
+    `<b>复习 ${safeIndex}/${safeTotal}</b>`,
     "",
     `<b>${escapeHtml(word.original)}</b>`,
     "先别急着看答案，想一想：它在原句里是什么意思？"
