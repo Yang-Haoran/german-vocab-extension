@@ -7,13 +7,14 @@ Cloud backend for German Vocab Extension. It stores saved vocabulary in PostgreS
 ```bash
 cd server
 cp .env.example .env
-npm install
+npm ci
 ```
 
-Create the PostgreSQL database, then run the migration:
+Create the PostgreSQL database, then run both migrations in order:
 
 ```bash
 psql "$DATABASE_URL" -f migrations/001_create_words.sql
+psql "$DATABASE_URL" -f migrations/002_add_review_fields.sql
 ```
 
 Start the server:

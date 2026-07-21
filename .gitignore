@@ -1,19 +1,17 @@
-.DS_Store
+# Dependencies and generated output
 node_modules/
 dist/
 build/
 coverage/
-.env
-.env.*
-*.log
 work/
 outputs/
-# Dependencies
-node_modules/
+*.log
 
-# Environment files
+# Environment files (track sanitized examples only)
 .env
-server/.env
+.env.*
+!.env.example
+!server/.env.example
 
 # Local data
 *.db

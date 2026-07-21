@@ -12,6 +12,7 @@ The project started from a real learning problem: when reading German news or ar
 - Manual cloud sync from the extension to a private Node.js backend.
 - PostgreSQL storage for cloud vocabulary entries.
 - Telegram Bot integration for daily vocabulary review messages.
+- Interactive review buttons, `/review` and `/stats` commands, and optional AI explanations.
 - VPS deployment with HTTPS reverse proxy via Caddy.
 - GitHub-based workflow: local development, versioned commits, deployment through `git pull` on the VPS.
 
@@ -19,7 +20,7 @@ The project started from a real learning problem: when reading German news or ar
 
 **English:** I built this project while preparing for an IT Ausbildung in Germany. It solves a real learning problem I have every day: saving useful German vocabulary directly from articles and reviewing it later without breaking the reading flow.
 
-**Deutsch:** Ich habe dieses Projekt waehrend meiner Vorbereitung auf eine IT-Ausbildung in Deutschland entwickelt. Es loest ein konkretes Lernproblem: deutsche Vokabeln direkt beim Lesen von Artikeln speichern, mit Kontext wiederholen und spaeter ueber Telegram erneut lernen.
+**Deutsch:** Ich habe dieses Projekt während meiner Vorbereitung auf eine IT-Ausbildung in Deutschland entwickelt. Es löst ein konkretes Lernproblem: deutsche Vokabeln direkt beim Lesen von Artikeln speichern, mit Kontext wiederholen und später über Telegram erneut lernen.
 
 ## Architecture
 
@@ -56,19 +57,33 @@ More details: [docs/architecture.md](docs/architecture.md)
 - Private REST API for storing vocabulary in PostgreSQL.
 - `API_SECRET` header for the first private deployment.
 - HTTPS endpoint through Caddy reverse proxy.
-- Telegram Bot API integration for review messages.
-- PostgreSQL schema prepared for future spaced repetition fields.
+- Interactive Telegram review bot with answer reveal, review ratings, statistics, and optional AI explanations.
+- PostgreSQL review metadata for difficulty, review count, next review date, and last result.
 
 ## Screenshots
 
-Add screenshots here before sharing the repository publicly or using it in applications:
+### Translate German in context
 
-- Translation popup while reading a German article.
-- Local vocabulary notebook with saved words.
-- Cloud sync settings page.
-- Telegram review message on the phone.
+![Context-aware translation popup while reading a German article](docs/images/translation-popup.png)
 
-A screenshot guide is available in [docs/screenshots.md](docs/screenshots.md).
+### Local vocabulary notebook and cloud sync
+
+![Vocabulary notebook after a successful cloud sync](docs/images/vocabulary-notebook.png)
+
+### Telegram review flow
+
+<p align="center">
+  <img src="docs/images/telegram-question.png" alt="Telegram active-recall question" width="48%">
+  <img src="docs/images/telegram-answer.png" alt="Telegram answer and review buttons" width="48%">
+</p>
+
+### Optional AI explanation
+
+<p align="center">
+  <img src="docs/images/telegram-ai-explanation.png" alt="AI-assisted vocabulary explanation in Telegram" width="60%">
+</p>
+
+The screenshots show the implemented browser-to-cloud review flow. A capture and privacy checklist is available in [docs/screenshots.md](docs/screenshots.md).
 
 ## Tech Stack
 
@@ -107,7 +122,7 @@ The extension still runs from the repository root. The `server/` folder contains
 4. Select this project folder.
 5. Open the extension options page.
 6. Add your Gemini API key and model name.
-7. Optional: enable cloud sync and add the backend URL plus API secret.
+7. Optional: enable cloud sync and add your backend URL plus API secret. Chrome requests access only to the configured backend origin when the first sync starts.
 8. Refresh a German article page and select a word.
 
 ## Cloud Deployment

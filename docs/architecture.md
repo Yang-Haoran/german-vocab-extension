@@ -93,7 +93,7 @@ The cloud backend stores synced vocabulary in the `words` table. It currently co
 - Source URL and source title.
 - Creation and review timestamps.
 
-Future review algorithm fields can include:
+The review workflow uses fields including:
 
 ```text
 review_count
@@ -107,7 +107,7 @@ last_result
 
 ```text
 Public internet
--> https://sea1.ktno.cc/vocab/*
+-> https://your-domain.example/vocab/*
 -> Caddy container on VPS
 -> http://127.0.0.1:3000/*
 -> Node.js server managed by PM2

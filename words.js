@@ -158,6 +158,21 @@ async function syncWordsToCloud() {
     return;
   }
 
+  try {
+    const originPattern = toOriginPattern(settings.cloudApiBaseUrl);
+    const alreadyGranted = await chrome.permissions.contains({ origins: [originPattern] });
+    if (!alreadyGranted) {
+      const granted = await chrome.permissions.request({ origins: [originPattern] });
+      if (!granted) {
+        setSyncStatus("未获得云端 API 地址的访问权限，无法同步。", "error");
+        return;
+      }
+    }
+  } catch {
+    setSyncStatus("云端 API 地址无效，请在设置中填写完整的 HTTP 或 HTTPS 地址。", "error");
+    return;
+  }
+
   const unsyncedWords = words.filter((word) => !word.cloudSyncedAt);
   if (unsyncedWords.length === 0) {
     setSyncStatus("所有本地词条都已经同步到云端。", "success");
@@ -229,6 +244,14 @@ function toCloudPayload(word) {
 function setSyncStatus(message, type) {
   syncStatus.textContent = message;
   syncStatus.className = `sync-status ${type || ""}`.trim();
+}
+
+function toOriginPattern(value) {
+  const url = new URL(String(value || ""));
+  if (!["http:", "https:"].includes(url.protocol)) {
+    throw new Error("Unsupported cloud API protocol");
+  }
+  return `${url.origin}/*`;
 }
 
 function formatDateTime(value) {

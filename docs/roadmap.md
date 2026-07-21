@@ -8,16 +8,18 @@
 - Manual cloud sync from the extension to the VPS backend.
 - HTTPS deployment through Caddy.
 - Telegram Bot test message from synced vocabulary.
+- Review metadata with difficulty, review count, next review date, and last result.
+- Interactive Telegram review flow with answer reveal and know/unsure/forgot buttons.
+- Dedicated review bot with `/review` and `/stats` commands.
+- Optional AI explanation for saved words.
 - Ausbildung-oriented README and project documentation.
 
 ## Next Steps
 
-- Add spaced repetition fields such as difficulty, review count, and next review date.
-- Improve Telegram review format with active recall prompts.
-- Add Telegram buttons: know, unclear, do not know.
 - Add automatic background sync after saving a word.
 - Add CSV or Anki export.
 - Add screenshots and short demo GIFs for GitHub.
+- Add automated tests and continuous integration.
 - Improve the project structure with TypeScript when the feature set stabilizes.
 
 ## Deutsch
@@ -30,14 +32,16 @@
 - Manuelle Cloud-Synchronisation von der Erweiterung zum VPS-Backend.
 - HTTPS-Deployment mit Caddy.
 - Telegram-Bot-Testnachricht aus synchronisierten Vokabeln.
+- Wiederholungsdaten mit Schwierigkeit, Anzahl, naechstem Termin und letztem Ergebnis.
+- Interaktiver Telegram-Ablauf mit Antwortanzeige und Bewertungsbuttons.
+- Eigener Wiederholungsbot mit `/review`- und `/stats`-Befehlen.
+- Optionale KI-Erklaerung fuer gespeicherte Woerter.
 - README und Projektdokumentation fuer Ausbildung-Bewerbungen.
 
 ## Naechste Schritte
 
-- Felder fuer Spaced Repetition ergaenzen, z. B. Schwierigkeit, Wiederholungen und naechstes Wiederholungsdatum.
-- Telegram-Wiederholungen mit aktiver Erinnerung verbessern.
-- Telegram-Buttons ergaenzen: kann ich, unsicher, kann ich nicht.
 - Automatische Hintergrund-Synchronisation nach dem Speichern ergaenzen.
 - CSV- oder Anki-Export ergaenzen.
 - Screenshots und kurze Demo-GIFs fuer GitHub hinzufuegen.
+- Automatisierte Tests und Continuous Integration ergaenzen.
 - Projektstruktur mit TypeScript verbessern, wenn der Funktionsumfang stabil ist.

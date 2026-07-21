@@ -14,24 +14,24 @@ Local machine
 
 ## VPS Components
 
-- Node.js server in `~/german-vocab-extension/server`.
+- Node.js server in `/srv/german-vocab-extension/server` (example path).
 - PostgreSQL running in Docker.
 - Caddy running in Docker for HTTPS and reverse proxy.
-- PM2 running under the `jim` user to keep the Node.js server online.
+- PM2 running under a dedicated service user to keep the Node.js server online.
 - `netfilter-persistent` to keep firewall rules after reboot.
 
 ## Public Endpoint
 
-The current production-style endpoint is:
+Configure your own HTTPS endpoint, for example:
 
 ```text
-https://sea1.ktno.cc/vocab
+https://your-domain.example/vocab
 ```
 
 The extension sends API requests to:
 
 ```text
-https://sea1.ktno.cc/vocab/api/words
+https://your-domain.example/vocab/api/words
 ```
 
 Caddy forwards this to:
@@ -68,26 +68,26 @@ Never commit real values for:
 Check backend status:
 
 ```bash
-~/.local/pm2/node_modules/.bin/pm2 status
+pm2 status
 ```
 
 Show backend logs:
 
 ```bash
-~/.local/pm2/node_modules/.bin/pm2 logs german-vocab-server
+pm2 logs german-vocab-server
 ```
 
 Restart backend after pulling new code:
 
 ```bash
-cd ~/german-vocab-extension/server
-~/.local/pm2/node_modules/.bin/pm2 restart german-vocab-server --update-env
+cd /srv/german-vocab-extension/server
+pm2 restart german-vocab-server --update-env
 ```
 
 Check HTTPS health endpoint:
 
 ```bash
-curl https://sea1.ktno.cc/vocab/health
+curl https://your-domain.example/vocab/health
 ```
 
 Check Caddy container:
@@ -107,7 +107,7 @@ sudo docker ps | grep german-vocab-postgres
 The backend process list is saved with PM2. A user-level crontab can run PM2 resurrect after reboot:
 
 ```text
-@reboot /home/jim/.local/pm2/node_modules/.bin/pm2 resurrect >/home/jim/.pm2/pm2-resurrect.log 2>&1
+@reboot /usr/bin/env pm2 resurrect
 ```
 
 Docker containers use restart policies, so PostgreSQL and Caddy can restart automatically after a VPS reboot.

@@ -79,7 +79,8 @@ export function createReviewUrl(wordId, result) {
 }
 
 function getPublicBaseUrl() {
-  return String(process.env.PUBLIC_BASE_URL || "https://sea1.ktno.cc/vocab").replace(/\/+$/, "");
+  const fallback = `http://localhost:${process.env.PORT || 3000}`;
+  return String(process.env.PUBLIC_BASE_URL || fallback).replace(/\/+$/, "");
 }
 
 function createReviewToken(wordId, result) {

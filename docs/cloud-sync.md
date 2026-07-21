@@ -25,6 +25,7 @@ Chrome extension
 - `GET /health`: verify that the service is online.
 - PostgreSQL stores vocabulary and review metadata.
 - Telegram Bot API sends review messages.
+- A dedicated Telegram review bot supports answer reveal, review ratings, statistics, and optional AI explanations.
 
 ## Sync Strategy
 
@@ -48,7 +49,6 @@ This avoids blocking the reading flow and makes the first version robust enough 
 ## Later Improvements
 
 - Add automatic background sync after saving a word.
-- Add spaced repetition fields: difficulty, review count, next review date.
-- Add Telegram buttons: know, unclear, do not know.
 - Add a small web dashboard for cloud vocabulary review.
 - Add export to CSV or Anki.
+- Add automated tests and continuous integration.

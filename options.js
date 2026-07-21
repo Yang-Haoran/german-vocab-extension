@@ -18,7 +18,7 @@ chrome.storage.local.get([
   apiKeyInput.value = settings.geminiApiKey || "";
   modelInput.value = settings.geminiModel || "gemini-3.1-flash-lite";
   cloudSyncEnabledInput.checked = Boolean(settings.cloudSyncEnabled);
-  cloudApiBaseUrlInput.value = settings.cloudApiBaseUrl || "https://sea1.ktno.cc/vocab";
+  cloudApiBaseUrlInput.value = settings.cloudApiBaseUrl || "";
   cloudApiSecretInput.value = settings.cloudApiSecret || "";
   await populateGermanVoices(settings.germanVoiceURI);
 });
