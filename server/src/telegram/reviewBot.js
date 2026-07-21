@@ -131,7 +131,7 @@ async function handleCallback(callback) {
   const chatId = callback.message?.chat?.id;
   const messageId = callback.message?.message_id;
   const callbackId = callback.id;
-  const match = data.match(/^rv:(show|explain|know|unsure|forgot):(\d+)$/);
+  const match = data.match(/^rv:(show|explain|know|unsure|forgot):(\d+)(?::(\d+):(\d+))?$/);
 
   if (!match || !chatId || !messageId) {
     await answerCallback(callbackId, "这个按钮已经失效了。", true);
@@ -140,6 +140,8 @@ async function handleCallback(callback) {
 
   const action = match[1];
   const wordId = Number(match[2]);
+  const currentIndex = Number(match[3] || 1);
+  const total = Number(match[4] || REVIEW_LIMIT);
   const word = await findWord(wordId);
 
   if (!word) {
@@ -148,36 +150,36 @@ async function handleCallback(callback) {
   }
 
   if (action === "show") {
-    await editReviewMessage(chatId, messageId, formatAnswer(word), resultKeyboard(word.id));
+    await editReviewMessage(chatId, messageId, formatAnswer(word), resultKeyboard(word.id, currentIndex, total));
     await answerCallback(callbackId, "答案已显示");
     return;
   }
 
   if (action === "explain") {
     await answerCallback(callbackId, "AI 正在讲解...");
-    await editAiExplanation(chatId, messageId, word);
+    await editAiExplanation(chatId, messageId, word, currentIndex, total);
     return;
   }
 
   const updated = await applyReviewResult(wordId, action);
   await answerCallback(callbackId, `已记录：${resultLabel(action)}`);
   await editReviewMessage(chatId, messageId, formatRecorded(word, action, updated), []);
-  await sendNextDueWord(chatId, wordId);
+  await sendNextDueWord(chatId, wordId, currentIndex + 1, total);
 }
 
-async function editAiExplanation(chatId, messageId, word) {
+async function editAiExplanation(chatId, messageId, word, currentIndex, total) {
   await sendChatAction(chatId, "typing");
 
   try {
     const explanation = await generateAiExplanation(word);
-    await editReviewMessage(chatId, messageId, formatAiExplanation(word, explanation), reviewResultKeyboard(word.id));
+    await editReviewMessage(chatId, messageId, formatAiExplanation(word, explanation), reviewResultKeyboard(word.id, currentIndex, total));
   } catch (error) {
     console.error("AI explanation failed", error);
     await editReviewMessage(
       chatId,
       messageId,
       formatAiExplanationError(word),
-      reviewResultKeyboard(word.id)
+      reviewResultKeyboard(word.id, currentIndex, total)
     );
   }
 }
@@ -193,7 +195,7 @@ async function startManualReview(chatId) {
   await sendPrompt(chatId, words[0], 1, words.length);
 }
 
-async function sendNextDueWord(chatId, previousWordId) {
+async function sendNextDueWord(chatId, previousWordId, nextIndex, total) {
   const words = await pickDueWords(1, previousWordId);
 
   if (words.length === 0) {
@@ -201,11 +203,11 @@ async function sendNextDueWord(chatId, previousWordId) {
     return;
   }
 
-  await sendPrompt(chatId, words[0], 1, REVIEW_LIMIT);
+  await sendPrompt(chatId, words[0], nextIndex, total);
 }
 
 async function sendPrompt(chatId, word, index, total) {
-  await sendReviewMessage(chatId, formatPrompt(word, index, total), promptKeyboard(word.id));
+  await sendReviewMessage(chatId, formatPrompt(word, index, total), promptKeyboard(word.id, index, total));
 }
 
 async function pickDueWords(limit, excludeWordId = null) {
@@ -366,26 +368,30 @@ function formatRecorded(word, action, updated) {
   ].join("\n");
 }
 
-function promptKeyboard(wordId) {
+function promptKeyboard(wordId, index, total) {
   return [
-    [{ text: "显示答案", callback_data: `rv:show:${wordId}` }],
-    [{ text: "跳过", callback_data: `rv:unsure:${wordId}` }]
+    [{ text: "显示答案", callback_data: buildReviewCallback("show", wordId, index, total) }],
+    [{ text: "跳过", callback_data: buildReviewCallback("unsure", wordId, index, total) }]
   ];
 }
 
-function resultKeyboard(wordId) {
+function resultKeyboard(wordId, index, total) {
   return [
-    [{ text: "AI 讲讲", callback_data: `rv:explain:${wordId}` }],
-    ...reviewResultKeyboard(wordId)
+    [{ text: "AI 讲讲", callback_data: buildReviewCallback("explain", wordId, index, total) }],
+    ...reviewResultKeyboard(wordId, index, total)
   ];
 }
 
-function reviewResultKeyboard(wordId) {
+function reviewResultKeyboard(wordId, index, total) {
   return [[
-    { text: "认识", callback_data: `rv:know:${wordId}` },
-    { text: "模糊", callback_data: `rv:unsure:${wordId}` },
-    { text: "忘了", callback_data: `rv:forgot:${wordId}` }
+    { text: "认识", callback_data: buildReviewCallback("know", wordId, index, total) },
+    { text: "模糊", callback_data: buildReviewCallback("unsure", wordId, index, total) },
+    { text: "忘了", callback_data: buildReviewCallback("forgot", wordId, index, total) }
   ]];
+}
+
+function buildReviewCallback(action, wordId, index, total) {
+  return `rv:${action}:${wordId}:${index}:${total}`;
 }
 
 function resultLabel(action) {
