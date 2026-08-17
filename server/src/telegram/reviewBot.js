@@ -260,7 +260,7 @@ async function sendStats(chatId) {
   const stats = result.rows[0];
   await sendReviewMessage(
     chatId,
-    `你的生词本：${stats.total} 个词\n今日到期：${stats.due} 个\n平均等级：${formatLevel(stats.avg_difficulty)}`
+    `你的生词本：${stats.total} 个词\n今日到期：${stats.due} 个\n平均复习强度：${formatReviewDifficulty(stats.avg_difficulty)}`
   );
 }
 
@@ -278,7 +278,7 @@ function formatPrompt(word, index, total) {
     lines.push("", `例句：${escapeHtml(shorten(word.context_text, 240))}`);
   }
 
-  lines.push("", `<i>等级 ${formatLevel(word.difficulty)} · 已复习 ${word.review_count || 0} 次</i>`);
+  lines.push("", `<i>复习强度 ${formatReviewDifficulty(word.difficulty)} · 已复习 ${word.review_count || 0} 次</i>`);
   return lines.join("\n");
 }
 
@@ -488,16 +488,10 @@ function getReviewChatId() {
   return process.env.REVIEW_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
 }
 
-function formatLevel(value) {
+function formatReviewDifficulty(value) {
   const difficulty = Math.round(Number(value) || 2);
-  const levels = {
-    1: "A1 入门",
-    2: "A2 基础",
-    3: "B1 中级",
-    4: "B2 中高级",
-    5: "C1 高级"
-  };
-  return levels[Math.min(5, Math.max(1, difficulty))];
+  const bounded = Math.min(5, Math.max(1, difficulty));
+  return `${bounded}/5`;
 }
 
 function formatDate(value) {
