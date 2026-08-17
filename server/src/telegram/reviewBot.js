@@ -226,6 +226,7 @@ async function pickDueWords(limit, excludeWordId = null) {
             translation,
             base_form,
             part_of_speech,
+            cefr_level,
             article,
             plural,
             explanation,
@@ -253,14 +254,13 @@ async function pickDueWords(limit, excludeWordId = null) {
 async function sendStats(chatId) {
   const result = await query(
     `select count(*)::int as total,
-            count(*) filter (where next_review_at is null or next_review_at <= now())::int as due,
-            coalesce(round(avg(difficulty), 1), 0) as avg_difficulty
+            count(*) filter (where next_review_at is null or next_review_at <= now())::int as due
      from words`
   );
   const stats = result.rows[0];
   await sendReviewMessage(
     chatId,
-    `你的生词本：${stats.total} 个词\n今日到期：${stats.due} 个\n平均复习强度：${formatReviewDifficulty(stats.avg_difficulty)}`
+    `你的生词本：${stats.total} 个词\n今日到期：${stats.due} 个`
   );
 }
 
@@ -278,7 +278,11 @@ function formatPrompt(word, index, total) {
     lines.push("", `例句：${escapeHtml(shorten(word.context_text, 240))}`);
   }
 
-  lines.push("", `<i>复习强度 ${formatReviewDifficulty(word.difficulty)} · 已复习 ${word.review_count || 0} 次</i>`);
+  const reviewMeta = [
+    word.cefr_level && `等级 ${word.cefr_level}`,
+    `已复习 ${word.review_count || 0} 次`
+  ].filter(Boolean).join(" · ");
+  lines.push("", `<i>${escapeHtml(reviewMeta)}</i>`);
   return lines.join("\n");
 }
 
@@ -488,11 +492,6 @@ function getReviewChatId() {
   return process.env.REVIEW_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
 }
 
-function formatReviewDifficulty(value) {
-  const difficulty = Math.round(Number(value) || 2);
-  const bounded = Math.min(5, Math.max(1, difficulty));
-  return `${bounded}/5`;
-}
 
 function formatDate(value) {
   if (!value) {

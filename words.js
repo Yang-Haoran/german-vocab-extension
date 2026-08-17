@@ -55,7 +55,8 @@ function createWordCard(word) {
     word.article && `冠词：${word.article}`,
     word.plural && `复数：${word.plural}`,
     word.baseForm && `原形：${word.baseForm}`,
-    word.partOfSpeech && `词性：${word.partOfSpeech}`
+    word.partOfSpeech && `词性：${word.partOfSpeech}`,
+    word.cefrLevel && `等级：${word.cefrLevel}`
   ].filter(Boolean);
 
   const card = document.createElement("article");
@@ -231,6 +232,7 @@ function toCloudPayload(word) {
     translation: word.translation,
     baseForm: word.baseForm,
     partOfSpeech: word.partOfSpeech,
+    cefrLevel: word.cefrLevel,
     article: word.article,
     plural: word.plural,
     explanation: word.explanation,

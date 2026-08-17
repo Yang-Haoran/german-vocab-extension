@@ -178,6 +178,7 @@ function buildPrompt(selectedText, context, exampleSentence) {
   "original": "选中的原文",
   "translation": "结合当前语境后自然准确的中文翻译",
   "partOfSpeech": "词性；如果是句子则写句子",
+  "cefrLevel": "估计的 telc/CEFR 等级，只能是 A1、A2、B1、B2、C1；无法判断则为空字符串",
   "baseForm": "词典原形；不适用则为空字符串",
   "article": "名词冠词 der/die/das；不适用则为空字符串",
   "plural": "名词复数；不适用则为空字符串",
@@ -185,6 +186,11 @@ function buildPrompt(selectedText, context, exampleSentence) {
   "contextTranslation": "仅翻译保存到单词本的例句，不要翻译整段上下文"
 }
 `.trim();
+}
+
+function normalizeCefrLevel(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+  return ["A1", "A2", "B1", "B2", "C1"].includes(normalized) ? normalized : "";
 }
 
 function normalizeTranslation(value, selectedText, context) {
@@ -195,6 +201,7 @@ function normalizeTranslation(value, selectedText, context) {
     original: text("original", selectedText),
     translation: text("translation"),
     partOfSpeech: text("partOfSpeech"),
+    cefrLevel: normalizeCefrLevel(text("cefrLevel")),
     baseForm: text("baseForm"),
     article: text("article"),
     plural: text("plural"),

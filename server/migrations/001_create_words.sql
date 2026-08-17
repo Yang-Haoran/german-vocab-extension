@@ -4,6 +4,7 @@ create table if not exists words (
   translation text not null,
   base_form text default '',
   part_of_speech text default '',
+  cefr_level text default '',
   article text default '',
   plural text default '',
   explanation text default '',

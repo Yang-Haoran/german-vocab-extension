@@ -37,6 +37,7 @@ wordsRouter.post("/", async (req, res, next) => {
          translation,
          base_form,
          part_of_speech,
+         cefr_level,
          article,
          plural,
          explanation,
@@ -44,11 +45,12 @@ wordsRouter.post("/", async (req, res, next) => {
          context_translation,
          source_title,
          source_url
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        on conflict (original, source_url) do update set
          translation = excluded.translation,
          base_form = excluded.base_form,
          part_of_speech = excluded.part_of_speech,
+         cefr_level = excluded.cefr_level,
          article = excluded.article,
          plural = excluded.plural,
          explanation = excluded.explanation,
@@ -62,6 +64,7 @@ wordsRouter.post("/", async (req, res, next) => {
         word.translation,
         word.baseForm,
         word.partOfSpeech,
+        word.cefrLevel,
         word.article,
         word.plural,
         word.explanation,
@@ -89,6 +92,7 @@ function normalizeWord(input) {
     translation: clean(input.translation),
     baseForm: clean(input.baseForm || input.base_form),
     partOfSpeech: clean(input.partOfSpeech || input.part_of_speech),
+    cefrLevel: normalizeCefrLevel(input.cefrLevel || input.cefr_level),
     article: clean(input.article),
     plural: clean(input.plural),
     explanation: clean(input.explanation),
@@ -97,6 +101,11 @@ function normalizeWord(input) {
     sourceTitle: clean(input.sourceTitle || input.title),
     sourceUrl: clean(input.sourceUrl || input.url)
   };
+}
+
+function normalizeCefrLevel(value) {
+  const normalized = clean(value).toUpperCase();
+  return ["A1", "A2", "B1", "B2", "C1"].includes(normalized) ? normalized : "";
 }
 
 function clean(value) {
