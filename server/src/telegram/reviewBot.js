@@ -131,7 +131,7 @@ async function handleCallback(callback) {
   const chatId = callback.message?.chat?.id;
   const messageId = callback.message?.message_id;
   const callbackId = callback.id;
-  const match = data.match(/^rv:(show|explain|delete|know|unsure|forgot):(\d+)(?::(\d+):(\d+))?$/);
+  const match = data.match(/^rv:(show|explain|deleteAsk|deleteConfirm|deleteCancel|know|unsure|forgot):(\d+)(?::(\d+):(\d+))?$/);
 
   if (!match || !chatId || !messageId) {
     await answerCallback(callbackId, "这个按钮已经失效了。", true);
@@ -161,7 +161,19 @@ async function handleCallback(callback) {
     return;
   }
 
-  if (action === "delete") {
+  if (action === "deleteAsk") {
+    await editReviewMessage(chatId, messageId, formatDeleteConfirm(word), deleteConfirmKeyboard(word.id, currentIndex, total));
+    await answerCallback(callbackId, "请再确认一次");
+    return;
+  }
+
+  if (action === "deleteCancel") {
+    await editReviewMessage(chatId, messageId, formatPrompt(word, currentIndex, total), promptKeyboard(word.id, currentIndex, total));
+    await answerCallback(callbackId, "已取消删除");
+    return;
+  }
+
+  if (action === "deleteConfirm") {
     const deleted = await softDeleteWord(wordId);
     if (!deleted) {
       await answerCallback(callbackId, "这个词已经删除了。", true);
@@ -411,6 +423,16 @@ function formatRecorded(word, action, updated) {
   ].join("\n");
 }
 
+function formatDeleteConfirm(word) {
+  return [
+    `<b>确认删除：${escapeHtml(word.original)}</b>`,
+    "",
+    "这个词会从云端生词本移除，不会再进入 Telegram 复习。",
+    "",
+    "如果只是暂时不想复习，可以点“取消”，再选择“跳过”。"
+  ].join("\n");
+}
+
 function formatDeleted(word) {
   return [
     `<b>${escapeHtml(word.original)}</b>`,
@@ -423,7 +445,7 @@ function promptKeyboard(wordId, index, total) {
     [{ text: "显示答案", callback_data: buildReviewCallback("show", wordId, index, total) }],
     [
       { text: "跳过", callback_data: buildReviewCallback("unsure", wordId, index, total) },
-      { text: "删除此词", callback_data: buildReviewCallback("delete", wordId, index, total) }
+      { text: "删除此词", callback_data: buildReviewCallback("deleteAsk", wordId, index, total) }
     ]
   ];
 }
@@ -442,8 +464,16 @@ function reviewResultKeyboard(wordId, index, total) {
       { text: "模糊", callback_data: buildReviewCallback("unsure", wordId, index, total) },
       { text: "忘了", callback_data: buildReviewCallback("forgot", wordId, index, total) }
     ],
-    [{ text: "删除此词", callback_data: buildReviewCallback("delete", wordId, index, total) }]
+    [{ text: "删除此词", callback_data: buildReviewCallback("deleteAsk", wordId, index, total) }]
   ];
+}
+
+
+function deleteConfirmKeyboard(wordId, index, total) {
+  return [[
+    { text: "确认删除", callback_data: buildReviewCallback("deleteConfirm", wordId, index, total) },
+    { text: "取消", callback_data: buildReviewCallback("deleteCancel", wordId, index, total) }
+  ]];
 }
 
 function buildReviewCallback(action, wordId, index, total) {
