@@ -12,6 +12,7 @@ wordsRouter.get("/", async (req, res, next) => {
     const result = await query(
       `select *
        from words
+       where deleted_at is null
        order by created_at desc
        limit $1`,
       [limit]
@@ -57,6 +58,7 @@ wordsRouter.post("/", async (req, res, next) => {
          context_text = excluded.context_text,
          context_translation = excluded.context_translation,
          source_title = excluded.source_title,
+         deleted_at = null,
          updated_at = now()
        returning *`,
       [
@@ -80,6 +82,70 @@ wordsRouter.post("/", async (req, res, next) => {
     next(error);
   }
 });
+
+
+wordsRouter.delete("/:wordId", async (req, res, next) => {
+  try {
+    const wordId = Number(req.params.wordId);
+
+    if (!Number.isSafeInteger(wordId)) {
+      return res.status(400).json({ error: "Valid word id is required." });
+    }
+
+    const deleted = await softDeleteWordById(wordId);
+    if (!deleted) {
+      return res.status(404).json({ error: "Word not found." });
+    }
+
+    res.json({ deleted: true, word: deleted });
+  } catch (error) {
+    next(error);
+  }
+});
+
+wordsRouter.delete("/", async (req, res, next) => {
+  try {
+    const original = clean(req.body?.original);
+    const sourceUrl = clean(req.body?.sourceUrl || req.body?.source_url || req.body?.url);
+
+    if (!original) {
+      return res.status(400).json({ error: "original is required." });
+    }
+
+    const deleted = await softDeleteWordByIdentity(original, sourceUrl);
+    if (!deleted) {
+      return res.status(404).json({ error: "Word not found." });
+    }
+
+    res.json({ deleted: true, word: deleted });
+  } catch (error) {
+    next(error);
+  }
+});
+
+async function softDeleteWordById(wordId) {
+  const result = await query(
+    `update words
+     set deleted_at = now(), updated_at = now()
+     where id = $1 and deleted_at is null
+     returning *`,
+    [wordId]
+  );
+  return result.rows[0];
+}
+
+async function softDeleteWordByIdentity(original, sourceUrl) {
+  const result = await query(
+    `update words
+     set deleted_at = now(), updated_at = now()
+     where original = $1
+       and source_url = $2
+       and deleted_at is null
+     returning *`,
+    [original, sourceUrl]
+  );
+  return result.rows[0];
+}
 
 wordsRouter.use((error, _req, res, _next) => {
   console.error(error);

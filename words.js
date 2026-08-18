@@ -96,12 +96,45 @@ function createWordCard(word) {
   });
 
   card.querySelector("[data-delete]").addEventListener("click", async () => {
-    words = words.filter((item) => item.id !== word.id);
-    await chrome.storage.local.set({ words });
-    renderWords();
+    await deleteWord(word);
   });
 
   return card;
+}
+
+
+async function deleteWord(word) {
+  const confirmed = window.confirm(`确定删除「${word.original}」吗？${word.cloudSyncedAt ? "\n\n这个词也会从云端生词本删除。" : ""}`);
+  if (!confirmed) {
+    return;
+  }
+
+  if (word.cloudSyncedAt) {
+    const settings = await chrome.storage.local.get([
+      "cloudSyncEnabled",
+      "cloudApiBaseUrl",
+      "cloudApiSecret"
+    ]);
+
+    if (!settings.cloudSyncEnabled || !settings.cloudApiBaseUrl || !settings.cloudApiSecret) {
+      window.alert("这个词已经同步到云端。请先到 API 设置里确认云端同步配置，然后再删除，避免本地和云端不一致。");
+      return;
+    }
+
+    try {
+      await ensureCloudPermission(settings.cloudApiBaseUrl);
+      await deleteWordFromCloud(word, settings);
+    } catch (error) {
+      console.error("Cloud delete failed", word.original, error);
+      window.alert("云端删除失败，本地暂时没有删除。请稍后重试。");
+      return;
+    }
+  }
+
+  words = words.filter((item) => item.id !== word.id);
+  await chrome.storage.local.set({ words });
+  renderWords();
+  setSyncStatus(word.cloudSyncedAt ? "已从本地和云端删除。" : "已从本地删除。", "success");
 }
 
 async function speakGerman(text) {
@@ -160,14 +193,10 @@ async function syncWordsToCloud() {
   }
 
   try {
-    const originPattern = toOriginPattern(settings.cloudApiBaseUrl);
-    const alreadyGranted = await chrome.permissions.contains({ origins: [originPattern] });
-    if (!alreadyGranted) {
-      const granted = await chrome.permissions.request({ origins: [originPattern] });
-      if (!granted) {
-        setSyncStatus("未获得云端 API 地址的访问权限，无法同步。", "error");
-        return;
-      }
+    const granted = await ensureCloudPermission(settings.cloudApiBaseUrl);
+    if (!granted) {
+      setSyncStatus("未获得云端 API 地址的访问权限，无法同步。", "error");
+      return;
     }
   } catch {
     setSyncStatus("云端 API 地址无效，请在设置中填写完整的 HTTP 或 HTTPS 地址。", "error");
@@ -189,7 +218,10 @@ async function syncWordsToCloud() {
 
   for (const word of unsyncedWords) {
     try {
-      await uploadWordToCloud(word, settings);
+      const cloudWord = await uploadWordToCloud(word, settings);
+      if (cloudWord?.id) {
+        word.cloudId = cloudWord.id;
+      }
       word.cloudSyncedAt = syncedAt;
       successCount += 1;
     } catch (error) {
@@ -224,6 +256,40 @@ async function uploadWordToCloud(word, settings) {
     const detail = await response.text();
     throw new Error(`Cloud API ${response.status}: ${detail}`);
   }
+
+  const data = await response.json().catch(() => null);
+  return data?.word || null;
+}
+
+
+async function deleteWordFromCloud(word, settings) {
+  const baseUrl = String(settings.cloudApiBaseUrl || "").replace(/\/+$/, "");
+  const endpoint = word.cloudId ? `${baseUrl}/api/words/${encodeURIComponent(word.cloudId)}` : `${baseUrl}/api/words`;
+  const response = await fetch(endpoint, {
+    method: "DELETE",
+    headers: {
+      "content-type": "application/json",
+      "x-api-secret": settings.cloudApiSecret
+    },
+    body: JSON.stringify({
+      original: word.original,
+      sourceUrl: word.sourceUrl || ""
+    })
+  });
+
+  if (!response.ok && response.status !== 404) {
+    const detail = await response.text();
+    throw new Error(`Cloud API ${response.status}: ${detail}`);
+  }
+}
+
+async function ensureCloudPermission(baseUrl) {
+  const originPattern = toOriginPattern(baseUrl);
+  const alreadyGranted = await chrome.permissions.contains({ origins: [originPattern] });
+  if (alreadyGranted) {
+    return true;
+  }
+  return chrome.permissions.request({ origins: [originPattern] });
 }
 
 function toCloudPayload(word) {

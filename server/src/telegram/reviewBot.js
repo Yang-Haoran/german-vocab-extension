@@ -131,7 +131,7 @@ async function handleCallback(callback) {
   const chatId = callback.message?.chat?.id;
   const messageId = callback.message?.message_id;
   const callbackId = callback.id;
-  const match = data.match(/^rv:(show|explain|know|unsure|forgot):(\d+)(?::(\d+):(\d+))?$/);
+  const match = data.match(/^rv:(show|explain|delete|know|unsure|forgot):(\d+)(?::(\d+):(\d+))?$/);
 
   if (!match || !chatId || !messageId) {
     await answerCallback(callbackId, "这个按钮已经失效了。", true);
@@ -158,6 +158,20 @@ async function handleCallback(callback) {
   if (action === "explain") {
     await answerCallback(callbackId, "AI 正在讲解...");
     await editAiExplanation(chatId, messageId, word, currentIndex, total);
+    return;
+  }
+
+  if (action === "delete") {
+    const deleted = await softDeleteWord(wordId);
+    if (!deleted) {
+      await answerCallback(callbackId, "这个词已经删除了。", true);
+      await editReviewMessage(chatId, messageId, "这个词已经删除了。", []);
+      return;
+    }
+
+    await answerCallback(callbackId, "已删除此词");
+    await editReviewMessage(chatId, messageId, formatDeleted(word), []);
+    await sendNextDueWord(chatId, wordId, currentIndex + 1, total);
     return;
   }
 
@@ -238,6 +252,7 @@ async function pickDueWords(limit, excludeWordId = null) {
             last_reviewed_at
      from words
      where (next_review_at is null or next_review_at <= now())
+       and deleted_at is null
        and ($2::bigint is null or id <> $2::bigint)
      order by
        case when next_review_at is null then 0 else 1 end,
@@ -251,11 +266,24 @@ async function pickDueWords(limit, excludeWordId = null) {
   return result.rows;
 }
 
+
+async function softDeleteWord(wordId) {
+  const result = await query(
+    `update words
+     set deleted_at = now(), updated_at = now()
+     where id = $1 and deleted_at is null
+     returning *`,
+    [wordId]
+  );
+  return result.rows[0];
+}
+
 async function sendStats(chatId) {
   const result = await query(
     `select count(*)::int as total,
             count(*) filter (where next_review_at is null or next_review_at <= now())::int as due
-     from words`
+     from words
+     where deleted_at is null`
   );
   const stats = result.rows[0];
   await sendReviewMessage(
@@ -383,10 +411,20 @@ function formatRecorded(word, action, updated) {
   ].join("\n");
 }
 
+function formatDeleted(word) {
+  return [
+    `<b>${escapeHtml(word.original)}</b>`,
+    "已从云端生词本删除，不会再进入复习。"
+  ].join("\n");
+}
+
 function promptKeyboard(wordId, index, total) {
   return [
     [{ text: "显示答案", callback_data: buildReviewCallback("show", wordId, index, total) }],
-    [{ text: "跳过", callback_data: buildReviewCallback("unsure", wordId, index, total) }]
+    [
+      { text: "跳过", callback_data: buildReviewCallback("unsure", wordId, index, total) },
+      { text: "删除此词", callback_data: buildReviewCallback("delete", wordId, index, total) }
+    ]
   ];
 }
 
@@ -398,11 +436,14 @@ function resultKeyboard(wordId, index, total) {
 }
 
 function reviewResultKeyboard(wordId, index, total) {
-  return [[
-    { text: "认识", callback_data: buildReviewCallback("know", wordId, index, total) },
-    { text: "模糊", callback_data: buildReviewCallback("unsure", wordId, index, total) },
-    { text: "忘了", callback_data: buildReviewCallback("forgot", wordId, index, total) }
-  ]];
+  return [
+    [
+      { text: "认识", callback_data: buildReviewCallback("know", wordId, index, total) },
+      { text: "模糊", callback_data: buildReviewCallback("unsure", wordId, index, total) },
+      { text: "忘了", callback_data: buildReviewCallback("forgot", wordId, index, total) }
+    ],
+    [{ text: "删除此词", callback_data: buildReviewCallback("delete", wordId, index, total) }]
+  ];
 }
 
 function buildReviewCallback(action, wordId, index, total) {

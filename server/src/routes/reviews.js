@@ -120,7 +120,8 @@ export async function findWord(wordId) {
   const result = await query(
     `select *
      from words
-     where id = $1`,
+     where id = $1
+       and deleted_at is null`,
     [wordId]
   );
   return result.rows[0];
@@ -138,6 +139,7 @@ export async function applyReviewResult(wordId, result) {
          next_review_at = now() + ($5::text || ' days')::interval,
          updated_at = now()
      where id = $1
+       and deleted_at is null
      returning *`,
     [
       wordId,

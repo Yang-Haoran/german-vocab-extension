@@ -13,6 +13,7 @@ create table if not exists words (
   source_title text default '',
   source_url text default '',
   reviewed_at timestamptz,
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (original, source_url)
