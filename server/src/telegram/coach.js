@@ -46,7 +46,7 @@ export async function handleCoachCallback(callback) {
       return;
     }
     await answerCallback(callback.id, "正在准备这篇……");
-    await editReviewMessage(chatId, messageId, `📖 你选了：<b>${escapeHtml(article.title)}</b>\n<i>正在准备，大约一分钟……</i>`, []);
+    await editReviewMessage(chatId, messageId, `📖 你选了：<b>${escapeHtml(article.title)}</b>\n<i>正在准备，大约半分钟……</i>`, []);
     await prepareLesson(chatId, article, session);
     return;
   }
