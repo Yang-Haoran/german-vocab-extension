@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { Router } from "express";
 import { query } from "../db.js";
+import { nextReview } from "../learning/srs.js";
 
 export const RESULT_CONFIG = {
   show: {
@@ -129,6 +130,12 @@ export async function findWord(wordId) {
 
 export async function applyReviewResult(wordId, result) {
   const config = RESULT_CONFIG[result];
+  const word = await findWord(wordId);
+  if (!word) {
+    return undefined;
+  }
+  // Interval grows with each correct recall (see learning/srs.js); "show" only reveals the answer.
+  const next = config.countAsReview ? nextReview(word.stage, result) : { stage: word.stage, intervalDays: 0 };
   const updateResult = await query(
     `update words
      set review_count = review_count + $2,
@@ -137,6 +144,7 @@ export async function applyReviewResult(wordId, result) {
          last_reviewed_at = now(),
          reviewed_at = now(),
          next_review_at = now() + ($5::text || ' days')::interval,
+         stage = $6,
          updated_at = now()
      where id = $1
        and deleted_at is null
@@ -146,7 +154,8 @@ export async function applyReviewResult(wordId, result) {
       config.countAsReview ? 1 : 0,
       config.difficultyDelta,
       result,
-      config.intervalDays
+      next.intervalDays,
+      next.stage
     ]
   );
 

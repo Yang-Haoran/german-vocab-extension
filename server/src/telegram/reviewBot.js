@@ -1,9 +1,30 @@
 import { applyReviewResult, findWord } from "../routes/reviews.js";
 import { query } from "../db.js";
 import { generateAiExplanation } from "../ai/explain.js";
+import { buildCloze, clozeHint } from "../learning/cloze.js";
+import { isGraduated } from "../learning/srs.js";
+import { learningStats, setState } from "../learning/store.js";
+import { handleCoachCallback, handleCoachText, onReviewRoundDone, skipWriting, startHeute } from "./coach.js";
 
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 const REVIEW_LIMIT = 5;
+const COMMANDS = [
+  { command: "heute", description: "今日一课：复习 + 读一篇 + 写几句" },
+  { command: "review", description: "只复习单词（5 个）" },
+  { command: "stats", description: "看统计" },
+  { command: "help", description: "怎么用" }
+];
+const HELP_TEXT = [
+  "<b>Deutsch Vocab Coach</b>",
+  "",
+  "/heute 今日一课，大约 10 分钟：先复习 5 个填空，再从 3 篇真实新闻里挑一篇读，最后用德语回答一个问题，我来批改",
+  "/review 只复习单词",
+  "/stats 看统计",
+  "",
+  "随时把你写的德语发给我（比如 Anschreiben 初稿、邮件），我都会批改。你写错的地方和文章里的关键词会自动变成以后的填空题。",
+  "",
+  "我不会定时推送，你想学的时候发 /heute。连续两天没来，我会提醒一次。"
+].join("\n");
 const POLL_TIMEOUT_SECONDS = 25;
 const POLL_DELAY_MS = 1000;
 
@@ -32,6 +53,7 @@ export function startReviewBotPolling() {
 
 async function prepareReviewBot() {
   await telegramApi("deleteWebhook", { drop_pending_updates: false });
+  await telegramApi("setMyCommands", { commands: COMMANDS }).catch((error) => console.error("setMyCommands failed", error));
 }
 
 export async function sendDailyReview() {
@@ -87,13 +109,25 @@ async function pollLoop(offset) {
 }
 
 async function handleUpdate(update) {
-  if (update.message) {
-    await handleMessage(update.message);
+  const chatId = update.message?.chat?.id ?? update.callback_query?.message?.chat?.id;
+  const ownerId = getReviewChatId();
+
+  // Only the configured owner may use the bot (lessons and corrections spend the Gemini quota).
+  if (!chatId || (ownerId && String(chatId) !== String(ownerId))) {
     return;
   }
 
-  if (update.callback_query) {
-    await handleCallback(update.callback_query);
+  await setState("last_activity", { at: new Date().toISOString() }).catch(() => {});
+
+  try {
+    if (update.message) {
+      await handleMessage(update.message);
+    } else if (update.callback_query) {
+      await handleCallback(update.callback_query);
+    }
+  } catch (error) {
+    console.error("Update failed", error);
+    await sendReviewMessage(chatId, "出了点问题，刚才那步没完成。再试一次，或者发 /heute 重新开始。").catch(() => {});
   }
 }
 
@@ -105,29 +139,49 @@ async function handleMessage(message) {
     return;
   }
 
-  if (text === "/start") {
-    await sendReviewMessage(
-      chatId,
-      "你好，我是你的德语生词复习 bot。\n\n发送 /review 可以马上开始复习；每天德国时间 9 点，我也会自动提醒你。"
-    );
+  const command = text.startsWith("/") ? text.split(/[\s@]/)[0].toLowerCase() : null;
+
+  if (command === "/start" || command === "/help") {
+    await sendReviewMessage(chatId, HELP_TEXT);
     return;
   }
 
-  if (text === "/review") {
+  if (command === "/heute") {
+    await startHeute(chatId);
+    return;
+  }
+
+  if (command === "/review") {
     await startManualReview(chatId);
     return;
   }
 
-  if (text === "/stats") {
+  if (command === "/stats") {
     await sendStats(chatId);
     return;
   }
 
-  await sendReviewMessage(chatId, "我现在支持：/review 开始复习，/stats 查看统计。");
+  if (command === "/skip") {
+    await skipWriting(chatId);
+    return;
+  }
+
+  if (command) {
+    await sendReviewMessage(chatId, HELP_TEXT);
+    return;
+  }
+
+  await handleCoachText(chatId, text);
 }
 
 async function handleCallback(callback) {
   const data = String(callback.data || "");
+
+  if (data.startsWith("co:")) {
+    await handleCoachCallback(callback);
+    return;
+  }
+
   const chatId = callback.message?.chat?.id;
   const messageId = callback.message?.message_id;
   const callbackId = callback.id;
@@ -211,30 +265,36 @@ async function editAiExplanation(chatId, messageId, word, currentIndex, total) {
 }
 
 async function startManualReview(chatId) {
-  const words = await pickDueWords(REVIEW_LIMIT);
+  await setState("session", { stage: "done" });
+  const count = await startReviewRound(chatId, REVIEW_LIMIT);
+
+  if (count === 0) {
+    await sendReviewMessage(chatId, "现在没有到期的词。发 /heute 读一篇文章，给未来的自己攒点材料。");
+  }
+}
+
+// Starts a review round of up to `limit` due words; returns how many there are (0 = nothing sent).
+export async function startReviewRound(chatId, limit, intro = null) {
+  const words = await pickDueWords(limit);
 
   if (words.length === 0) {
-    await sendReviewMessage(chatId, "现在没有到期的词。你可以晚点再来，或者先去插件里同步一些新词。");
-    return;
+    return 0;
   }
 
+  if (intro) {
+    await sendReviewMessage(chatId, intro(words.length));
+  }
   await sendPrompt(chatId, words[0], 1, words.length);
+  return words.length;
 }
 
 async function sendNextDueWord(chatId, previousWordId, nextIndex, total) {
-  if (nextIndex > total) {
-    await sendReviewMessage(chatId, `这一轮复习完成了。今天先这样。
-
-想继续可以发送 /review。`);
-    return;
-  }
-
-  const words = await pickDueWords(1, previousWordId);
+  const words = nextIndex > total ? [] : await pickDueWords(1, previousWordId);
 
   if (words.length === 0) {
-    await sendReviewMessage(chatId, `这一轮复习完成了。今天先这样。
-
-想继续可以发送 /review。`);
+    if (!(await onReviewRoundDone(chatId, nextIndex - 1))) {
+      await sendReviewMessage(chatId, "这一轮复习完成了。想读篇文章、写几句，发 /heute。");
+    }
     return;
   }
 
@@ -260,6 +320,9 @@ async function pickDueWords(limit, excludeWordId = null) {
             context_translation,
             review_count,
             difficulty,
+            stage,
+            origin,
+            mistake,
             next_review_at,
             last_reviewed_at
      from words
@@ -291,22 +354,37 @@ async function softDeleteWord(wordId) {
 }
 
 async function sendStats(chatId) {
-  const result = await query(
-    `select count(*)::int as total,
-            count(*) filter (where next_review_at is null or next_review_at <= now())::int as due
-     from words
-     where deleted_at is null`
-  );
-  const stats = result.rows[0];
-  await sendReviewMessage(
-    chatId,
-    `你的生词本：${stats.total} 个词\n今日到期：${stats.due} 个`
-  );
+  const stats = await learningStats();
+  const lines = [
+    "<b>📊 你的德语</b>",
+    `生词本：${stats.words} 个（到期 ${stats.due} 个，已学会 ${stats.graduated} 个）`,
+    `今日一课：共 ${stats.lessons} 次，最近 7 天练了 ${stats.days_7} 天`,
+    `写作批改：共 ${stats.writings} 段`
+  ];
+  if (stats.topErrors.length) {
+    lines.push(`最近 30 天最常错：${stats.topErrors.map((row) => `${row.type} ${row.count}`).join("、")}`);
+  }
+  await sendReviewMessage(chatId, lines.join("\n"));
 }
 
 function formatPrompt(word, index, total) {
   const safeTotal = Math.max(1, Number(total) || REVIEW_LIMIT);
   const safeIndex = Math.min(Math.max(1, Number(index) || 1), safeTotal);
+  const cloze = buildCloze(word);
+
+  // Fill in the blank: produce the word from its sentence (harder than recognising it, sticks better).
+  if (cloze) {
+    return [
+      `<b>复习 ${safeIndex}/${safeTotal}</b> · 填空`,
+      "",
+      escapeHtml(cloze.text),
+      "",
+      `提示：${escapeHtml(clozeHint(word, cloze.answer))}`,
+      "",
+      "<i>先在心里说出来，再点“显示答案”</i>"
+    ].join("\n");
+  }
+
   const lines = [
     `<b>复习 ${safeIndex}/${safeTotal}</b>`,
     "",
@@ -338,6 +416,10 @@ function formatAnswer(word) {
     `<b>${escapeHtml(word.original)}</b>`,
     `<b>${escapeHtml(word.translation)}</b>`
   ];
+
+  if (word.origin === "writing" && word.mistake) {
+    lines.push(`你当时写的：<s>${escapeHtml(word.mistake)}</s>`);
+  }
 
   if (meta) {
     lines.push("", escapeHtml(meta));
@@ -419,7 +501,7 @@ function formatRecorded(word, action, updated) {
   return [
     `<b>${escapeHtml(word.original)}</b>`,
     `已记录：<b>${escapeHtml(resultLabel(action))}</b>`,
-    `下次复习：${escapeHtml(nextReview)}`
+    isGraduated(updated.stage) ? `🎓 已经学会了，${escapeHtml(nextReview)} 再见一次` : `下次复习：${escapeHtml(nextReview)}`
   ].join("\n");
 }
 
@@ -488,7 +570,7 @@ function resultLabel(action) {
   }[action] || action;
 }
 
-async function sendReviewMessage(chatId, text, keyboard = null) {
+export async function sendReviewMessage(chatId, text, keyboard = null) {
   return telegramApi("sendMessage", {
     chat_id: chatId,
     text,
@@ -498,7 +580,7 @@ async function sendReviewMessage(chatId, text, keyboard = null) {
   });
 }
 
-async function editReviewMessage(chatId, messageId, text, keyboard = null) {
+export async function editReviewMessage(chatId, messageId, text, keyboard = null) {
   return telegramApi("editMessageText", {
     chat_id: chatId,
     message_id: messageId,
@@ -509,14 +591,14 @@ async function editReviewMessage(chatId, messageId, text, keyboard = null) {
   });
 }
 
-async function sendChatAction(chatId, action) {
+export async function sendChatAction(chatId, action) {
   return telegramApi("sendChatAction", {
     chat_id: chatId,
     action
   });
 }
 
-async function answerCallback(callbackQueryId, text, showAlert = false) {
+export async function answerCallback(callbackQueryId, text, showAlert = false) {
   return telegramApi("answerCallbackQuery", {
     callback_query_id: callbackQueryId,
     text,
@@ -586,7 +668,7 @@ function shorten(value, maxLength) {
   return `${text.slice(0, maxLength - 1)}…`;
 }
 
-function escapeHtml(value) {
+export function escapeHtml(value) {
   return String(value || "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
