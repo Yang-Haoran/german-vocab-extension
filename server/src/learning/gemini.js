@@ -6,14 +6,14 @@ const DEFAULT_MODELS = "gemini-flash-latest,gemini-flash-lite-latest";
 const RETRY_WAITS_MS = [10_000, 30_000];
 const REQUEST_TIMEOUT_MS = 180_000;
 
-export async function geminiJson(prompt, schema, { temperature = 0.4 } = {}) {
+export async function geminiJson(prompt, schema, { temperature = 0.4, models: modelList } = {}) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_API_KEY;
 
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured.");
   }
 
-  const models = String(process.env.LEARNING_MODELS || DEFAULT_MODELS)
+  const models = String(modelList || process.env.LEARNING_MODELS || DEFAULT_MODELS)
     .split(",")
     .map((model) => model.trim())
     .filter(Boolean);

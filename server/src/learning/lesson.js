@@ -46,7 +46,10 @@ export async function createLesson(article, articleText) {
 正文：
 ${articleText}`;
 
-  const lesson = await geminiJson(prompt, LESSON_SCHEMA);
+  // Rewriting a news text is easy enough for flash-lite, which answers much faster on the free tier.
+  const lesson = await geminiJson(prompt, LESSON_SCHEMA, {
+    models: process.env.LESSON_MODELS || "gemini-flash-lite-latest,gemini-flash-latest"
+  });
   return validateLesson(lesson);
 }
 

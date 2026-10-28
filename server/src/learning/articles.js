@@ -40,7 +40,7 @@ export const CATEGORIES = [
 
 // Paywalled, live-ticker or non-article entries are skipped.
 const SKIP_TITLE = /heise\+|\bS\+|\bZ\+|Podcast|Liveblog|Ticker|Quiz|Anzeige|Gewinnspiel|^\s*\+\+|\+\+\s*$/i;
-const SKIP_URL = /liveblog|newsticker|\/ticker|\/podcast/i;
+const SKIP_URL = /liveblog|newsticker|\/ticker|\/podcast|\/multimedia\/|\/video[-/]/i;
 const TRACKING_PARAM = /^(utm_|wt_mc$|wt_zmc$|at_medium$|at_campaign$)/;
 
 const parser = new Parser();
