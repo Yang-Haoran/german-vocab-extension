@@ -31,15 +31,17 @@ export const CATEGORIES = [
     key: "region",
     label: "🏙 Karlsruhe & Deutschland",
     feeds: [
-      { source: "SWR Karlsruhe", url: "https://www.swr.de/~rss/swraktuell/baden-wuerttemberg/karlsruhe/index.xml" },
+      { source: "SWR Karlsruhe", url: "https://www.swr.de/~rss/swraktuell/baden-wuerttemberg/karlsruhe/index.xml", prefer: true },
       { source: "SWR Baden-Württemberg", url: "https://www.swr.de/~rss/swraktuell/baden-wuerttemberg/index.xml" },
       { source: "tagesschau Inland", url: "https://www.tagesschau.de/inland/index~rss2.xml" }
     ]
   }
 ];
 
-// Paywalled or non-article entries are skipped by title.
-const SKIP_TITLE = /heise\+|\bS\+|\bZ\+|Podcast|Liveblog|Ticker|Quiz|Anzeige|Gewinnspiel/i;
+// Paywalled, live-ticker or non-article entries are skipped.
+const SKIP_TITLE = /heise\+|\bS\+|\bZ\+|Podcast|Liveblog|Ticker|Quiz|Anzeige|Gewinnspiel|^\s*\+\+|\+\+\s*$/i;
+const SKIP_URL = /liveblog|newsticker|\/ticker|\/podcast/i;
+const TRACKING_PARAM = /^(utm_|wt_mc$|wt_zmc$|at_medium$|at_campaign$)/;
 
 const parser = new Parser();
 const feedCache = new Map();
@@ -57,10 +59,12 @@ export async function pickCandidates(excludeUrls = new Set(), now = Date.now()) 
       }
     }
 
-    const fresh = items
+    const recent = items
       .filter((item) => !excludeUrls.has(item.url) && now - item.published <= MAX_AGE_DAYS * 86_400_000)
-      .sort((a, b) => b.published - a.published)
-      .slice(0, 12);
+      .sort((a, b) => b.published - a.published);
+    // A feed marked "prefer" (Karlsruhe) wins whenever it has something new.
+    const preferred = recent.filter((item) => item.prefer);
+    const fresh = (preferred.length ? preferred : recent).slice(0, 12);
 
     if (fresh.length) {
       const item = fresh[Math.floor(Math.random() * fresh.length)];
@@ -82,12 +86,13 @@ async function readFeed(feed, now) {
   const items = (parsed.items || [])
     .map((item) => ({
       source: feed.source,
+      prefer: Boolean(feed.prefer),
       title: clean(item.title),
-      url: String(item.link || "").trim(),
+      url: stripTracking(String(item.link || "").trim()),
       summary: clean(item.contentSnippet || item.summary || item.content || ""),
       published: Date.parse(item.isoDate || item.pubDate || "") || 0
     }))
-    .filter((item) => item.title && item.url && !SKIP_TITLE.test(item.title));
+    .filter((item) => item.title && item.url && !SKIP_TITLE.test(item.title) && !SKIP_URL.test(item.url));
 
   feedCache.set(feed.url, { at: now, items });
   return items;
@@ -138,6 +143,20 @@ async function fetchText(url) {
     return new TextDecoder(charset).decode(buffer);
   } catch {
     return new TextDecoder("utf-8").decode(buffer);
+  }
+}
+
+export function stripTracking(url) {
+  try {
+    const parsed = new URL(url);
+    for (const key of [...parsed.searchParams.keys()]) {
+      if (TRACKING_PARAM.test(key)) {
+        parsed.searchParams.delete(key);
+      }
+    }
+    return parsed.toString();
+  } catch {
+    return url;
   }
 }
 

@@ -38,7 +38,7 @@ export async function createLesson(article, articleText) {
 - text_de：把文章改写成 ${LEVEL} 水平的德语短文，110～160 词。只写原文里有的事实，不要补充原文没有的信息；原文很短就写短一点。用自然的新闻德语，可以有从句、被动态、名词化，但不要太生僻的词
 - text_zh：text_de 的中文翻译
 - keywords：从 text_de 里挑 3 个对 ${LEVEL} 最有用的词或搭配（优先名词动词搭配、带固定介词的动词、常用名词）。word 必须和 text_de 里的写法一模一样（包括变格变位），sentence 是 text_de 里包含这个词的那一整句，原样照抄。lemma 是原形（可分动词用 | 标出，如 an|kündigen），名词写 article（der/die/das）和 plural（如 -en），不是名词就留空。zh 是中文意思
-- question_de：一个开放问题，让读者用 2～4 句德语回答：把文章话题和他自己的生活联系起来（看法、经历、在德国的生活、IT 或 Ausbildung）。不要问原文细节
+- question_de：一个开放问题（只问一句，不超过 20 个词），让读者用 2～4 句德语回答：把文章话题和他自己的生活联系起来（看法、经历、在德国的生活、IT 或 Ausbildung）。不要问原文细节
 - question_zh：问题的中文翻译
 
 来源：${article.source}

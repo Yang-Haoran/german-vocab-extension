@@ -57,3 +57,12 @@ test("article text keeps body paragraphs and drops boilerplate", () => {
     <script>var p = "<p>kein Text aus Skripten bitte, das ist nur Code und keine Nachricht</p>";</script>`;
   assert.equal(extractParagraphs(html), "Die Stadt Karlsruhe baut eine neue Bahn & die Arbeiten beginnen im November dieses Jahres.");
 });
+
+test("tracking parameters are removed from article links", async () => {
+  const { stripTracking } = await import("../src/learning/articles.js");
+  assert.equal(
+    stripTracking("https://www.heise.de/news/x-11503392.html?wt_mc=rss.red.ho.ho.atom.beitrag.beitrag"),
+    "https://www.heise.de/news/x-11503392.html"
+  );
+  assert.equal(stripTracking("https://example.de/a?id=5&utm_source=rss"), "https://example.de/a?id=5");
+});

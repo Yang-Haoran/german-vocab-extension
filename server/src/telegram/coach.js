@@ -46,7 +46,7 @@ export async function handleCoachCallback(callback) {
       return;
     }
     await answerCallback(callback.id, "正在准备这篇……");
-    await editReviewMessage(chatId, messageId, `📖 你选了：<b>${escapeHtml(article.title)}</b>\n<i>正在准备，大约半分钟……</i>`, []);
+    await editReviewMessage(chatId, messageId, `📖 你选了：<b>${escapeHtml(article.title)}</b>\n<i>正在准备，大约一分钟……</i>`, []);
     await prepareLesson(chatId, article, session);
     return;
   }
@@ -78,6 +78,7 @@ export async function handleCoachText(chatId, text) {
   const session = (await getState(SESSION)) || {};
   const lesson = session.stage === "writing" && session.lessonId ? await findLesson(session.lessonId) : null;
 
+  await sendReviewMessage(chatId, "<i>收到，正在批改，大约一分钟……</i>");
   await sendChatAction(chatId, "typing");
   let correction;
   try {

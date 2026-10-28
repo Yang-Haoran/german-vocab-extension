@@ -40,7 +40,7 @@ export async function correctWriting(text, { question = "", context = "" } = {})
 - corrected：在他原文基础上做最少的修改，只改真正的错误（语法、用词、拼写、标点），保留他的意思和写法
 - errors：每一处修改单独列一条。wrong 是他原文里错的那一小段（必须和原文一字不差），right 是改正后的写法（必须和 corrected 里一字不差），type 选一个类型，explain_zh 用中文说清楚规则，不超过 40 字
 - better：一个更地道的 ${LEVEL}～C1 版本（意思不变）；如果原文已经很地道就留空
-- praise_zh：一句具体的中文鼓励，指出他写得好的地方
+- praise_zh：一句具体的中文鼓励，只夸真正写对的地方（不要夸 errors 里出过错的结构）
 ${question ? `\n他在回答这个问题：${question}` : ""}${context ? `\n话题背景（文章）：${context.slice(0, 800)}` : ""}
 
 学生原文：
