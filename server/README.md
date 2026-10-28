@@ -2,7 +2,20 @@
 
 Cloud backend for German Vocab Extension. It stores saved vocabulary in PostgreSQL and can send daily review messages through Telegram Bot API.
 
-## First Run
+## Run with Docker Compose (VPS)
+
+```bash
+cd server
+cp .env.example .env   # add API_SECRET, REVIEW_TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GEMINI_API_KEY, POSTGRES_PASSWORD
+docker compose up -d --build
+```
+
+Migrations in `migrations/` run automatically on startup. The API listens on `127.0.0.1:3000` only;
+expose it through a private network (for example `tailscale serve --tcp 3000 tcp://127.0.0.1:3000`).
+
+Tests: `npm test`
+
+## First Run (without Docker)
 
 ```bash
 cd server

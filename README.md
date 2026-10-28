@@ -13,6 +13,10 @@ The project started from a real learning problem: when reading German news or ar
 - PostgreSQL storage for cloud vocabulary entries.
 - Telegram Bot integration for daily vocabulary review messages.
 - Interactive review buttons, `/review` and `/stats` commands, and optional AI explanations.
+- `/heute` daily lesson in Telegram: review 5 fill-in-the-blank cards, pick one of three real German news articles (IT, work & Ausbildung, Karlsruhe), read a short B2 version, answer a question in German and get corrections with Chinese explanations.
+- Spaced repetition with growing intervals (3 → 7 → 14 → 30 → 60 → 120 days); writing mistakes and lesson keywords automatically become new review cards.
+- AI output is validated against the source text before it is stored (keywords must appear in the article, corrections must match what the learner wrote).
+- Docker Compose deployment with automatic database migrations and unit tests (`npm test`).
 - VPS deployment with HTTPS reverse proxy via Caddy.
 - GitHub-based workflow: local development, versioned commits, deployment through `git pull` on the VPS.
 
@@ -94,8 +98,9 @@ The screenshots show the implemented browser-to-cloud review flow. A capture and
 - Web Speech API
 - Node.js / Express
 - PostgreSQL
-- Docker
-- Caddy HTTPS reverse proxy
+- Docker / Docker Compose
+- Node.js built-in test runner (`node:test`)
+- Caddy HTTPS reverse proxy (first deployment) / Tailscale private network (current)
 - Telegram Bot API
 - VPS deployment
 
