@@ -17,11 +17,11 @@ const COMMANDS = [
 const HELP_TEXT = [
   "<b>Deutsch Vocab Coach</b>",
   "",
-  "/heute 今日一课，大约 10 分钟：先复习 5 个填空，再从 3 篇真实新闻里挑一篇读，最后用德语回答一个问题，我来批改",
+  "/heute 今日一课，大约 10 分钟：先复习 5 个单词，再从 3 篇真实新闻里挑一篇读，最后用德语回答一个问题，我来批改",
   "/review 只复习单词",
   "/stats 看统计",
   "",
-  "随时把你写的德语发给我（比如 Anschreiben 初稿、邮件），我都会批改。你写错的地方和文章里的关键词会自动变成以后的填空题。",
+  "随时把你写的德语发给我（比如 Anschreiben 初稿、邮件），我都会批改。你写错的地方和文章里的关键词会自动加进复习。",
   "",
   "我不会定时推送，你想学的时候发 /heute。连续两天没来，我会提醒一次。"
 ].join("\n");
@@ -370,9 +370,10 @@ async function sendStats(chatId) {
 function formatPrompt(word, index, total) {
   const safeTotal = Math.max(1, Number(total) || REVIEW_LIMIT);
   const safeIndex = Math.min(Math.max(1, Number(index) || 1), safeTotal);
-  const cloze = buildCloze(word);
+  // Default is the original card: see the word, recall its meaning. Fill-in-the-blank
+  // (produce the word from its sentence) proved too hard for review, so it is opt-in.
+  const cloze = process.env.REVIEW_CLOZE === "true" ? buildCloze(word) : null;
 
-  // Fill in the blank: produce the word from its sentence (harder than recognising it, sticks better).
   if (cloze) {
     return [
       `<b>复习 ${safeIndex}/${safeTotal}</b> · 填空`,

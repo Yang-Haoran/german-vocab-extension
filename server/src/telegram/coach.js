@@ -16,7 +16,7 @@ const MAX_WRITING = 1500;
 
 export async function startHeute(chatId) {
   await setState(SESSION, { stage: "review", reviewed: 0, shownUrls: [] });
-  const count = await startReviewRound(chatId, DAILY_REVIEW, (n) => `🔁 <b>今日一课</b>\n先热身：复习 ${n} 个，看句子想出挖掉的词。`);
+  const count = await startReviewRound(chatId, DAILY_REVIEW, (n) => `🔁 <b>今日一课</b>\n先热身：复习 ${n} 个单词。`);
 
   if (count === 0) {
     await offerArticles(chatId, "📖 <b>今日一课</b>\n今天没有要复习的词，直接挑一篇读：");
@@ -188,7 +188,7 @@ function formatLesson(article, lesson) {
   ];
 
   if (lesson.keywords.length) {
-    lines.push("", "🔑 <b>关键词</b>（已加进复习，明天开始出填空题）");
+    lines.push("", "🔑 <b>关键词</b>（已加进复习）");
     for (const keyword of lesson.keywords) {
       const head = [keyword.article, keyword.lemma || keyword.word].filter(Boolean).join(" ") + (keyword.plural ? `, ${keyword.plural}` : "");
       const inText = keyword.lemma && keyword.lemma.replace("|", "") !== keyword.word ? `（文中：${keyword.word}）` : "";
@@ -224,7 +224,7 @@ function formatCorrection(correction, added) {
   }
 
   if (added) {
-    lines.push("", `📌 ${added} 处加进了复习，明天开始以填空题出现。`);
+    lines.push("", `📌 ${added} 处加进了复习。`);
   }
 
   return lines.join("\n");
